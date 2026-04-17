@@ -7,6 +7,7 @@ import { ImageFile, SelectedImage, ThumbnailAspectRatio } from '../ui/AppPropert
 import { Color, COLOR_LABELS } from '../../utils/adjustments';
 import Text from '../ui/Text';
 import { TextColors, TextVariants, TextWeights } from '../../types/typography';
+import { useTranslation } from 'react-i18next';
 
 const VERTICAL_PADDING = 24;
 const HORIZONTAL_PADDING = 4;
@@ -60,6 +61,7 @@ const FilmstripThumbnail = memo(
     setSize: (index: number, width: number) => void;
     knownWidth: number;
   }) => {
+    const { t } = useTranslation();
     const [layers, setLayers] = useState<ImageLayer[]>(() => {
       return thumbData ? [{ id: thumbData, url: thumbData, opacity: 1 }] : [];
     });
@@ -236,7 +238,7 @@ const FilmstripThumbnail = memo(
               color={TextColors.white}
               weight={TextWeights.bold}
               className="bg-bg-primary/70 text-[10px] px-1 py-0.5 rounded-full backdrop-blur-xs"
-              data-tooltip="Virtual Copy"
+              data-tooltip={t('editor.virtual_copy')}
             >
               VC
             </Text>

@@ -180,6 +180,7 @@ export interface AppSettings {
   isWaveformVisible?: boolean;
   waveformHeight?: number;
   activeWaveformChannel?: string;
+  language?: string;
 }
 
 export interface BrushSettings {

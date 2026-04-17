@@ -1,4 +1,5 @@
 import { type ChangeEvent, useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import debounce from 'lodash.debounce';
 import { v4 as uuidv4 } from 'uuid';
 import clsx from 'clsx';
@@ -118,88 +119,91 @@ interface DragData {
 
 const SUB_MASK_CONFIG: Record<Mask, any> = {
   [Mask.Radial]: {
-    parameters: [{ key: 'feather', label: 'Feather', min: 0, max: 100, step: 1, multiplier: 100, defaultValue: 50 }],
+    parameters: [{ key: 'feather', labelKey: 'masks.param_feather', min: 0, max: 100, step: 1, multiplier: 100, defaultValue: 50 }],
   },
   [Mask.Brush]: { showBrushTools: true },
   [Mask.Flow]: { showBrushTools: true, showFlowControl: true },
   [Mask.Linear]: { parameters: [] },
   [Mask.Color]: {
     parameters: [
-      { key: 'tolerance', label: 'Tolerance', min: 1, max: 100, step: 1, defaultValue: 20 },
-      { key: 'grow', label: 'Grow', min: -100, max: 100, step: 1, defaultValue: 0 },
-      { key: 'feather', label: 'Feather', min: 0, max: 100, step: 1, defaultValue: 35 },
+      { key: 'tolerance', labelKey: 'masks.param_tolerance', min: 1, max: 100, step: 1, defaultValue: 20 },
+      { key: 'grow', labelKey: 'masks.param_grow', min: -100, max: 100, step: 1, defaultValue: 0 },
+      { key: 'feather', labelKey: 'masks.param_feather', min: 0, max: 100, step: 1, defaultValue: 35 },
     ],
   },
   [Mask.Luminance]: {
     parameters: [
-      { key: 'tolerance', label: 'Tolerance', min: 1, max: 100, step: 1, defaultValue: 20 },
-      { key: 'grow', label: 'Grow', min: -100, max: 100, step: 1, defaultValue: 0 },
-      { key: 'feather', label: 'Feather', min: 0, max: 100, step: 1, defaultValue: 35 },
+      { key: 'tolerance', labelKey: 'masks.param_tolerance', min: 1, max: 100, step: 1, defaultValue: 20 },
+      { key: 'grow', labelKey: 'masks.param_grow', min: -100, max: 100, step: 1, defaultValue: 0 },
+      { key: 'feather', labelKey: 'masks.param_feather', min: 0, max: 100, step: 1, defaultValue: 35 },
     ],
   },
   [Mask.All]: { parameters: [] },
   [Mask.AiDepth]: {
-    parameters: [{ key: 'feather', label: 'Global Feather', min: 0, max: 100, step: 1, defaultValue: 15 }],
+    parameters: [{ key: 'feather', labelKey: 'masks.param_global_feather', min: 0, max: 100, step: 1, defaultValue: 15 }],
   },
   [Mask.AiSubject]: {
     parameters: [
-      { key: 'grow', label: 'Grow', min: -100, max: 100, step: 1, defaultValue: 0 },
-      { key: 'feather', label: 'Feather', min: 0, max: 100, step: 1, defaultValue: 0 },
+      { key: 'grow', labelKey: 'masks.param_grow', min: -100, max: 100, step: 1, defaultValue: 0 },
+      { key: 'feather', labelKey: 'masks.param_feather', min: 0, max: 100, step: 1, defaultValue: 0 },
     ],
   },
   [Mask.AiForeground]: {
     parameters: [
-      { key: 'grow', label: 'Grow', min: -100, max: 100, step: 1, defaultValue: 0 },
-      { key: 'feather', label: 'Feather', min: 0, max: 100, step: 1, defaultValue: 0 },
+      { key: 'grow', labelKey: 'masks.param_grow', min: -100, max: 100, step: 1, defaultValue: 0 },
+      { key: 'feather', labelKey: 'masks.param_feather', min: 0, max: 100, step: 1, defaultValue: 0 },
     ],
   },
   [Mask.AiSky]: {
     parameters: [
-      { key: 'grow', label: 'Grow', min: -100, max: 100, step: 1, defaultValue: 0 },
-      { key: 'feather', label: 'Feather', min: 0, max: 100, step: 1, defaultValue: 0 },
+      { key: 'grow', labelKey: 'masks.param_grow', min: -100, max: 100, step: 1, defaultValue: 0 },
+      { key: 'feather', labelKey: 'masks.param_feather', min: 0, max: 100, step: 1, defaultValue: 0 },
     ],
   },
   [Mask.QuickEraser]: { parameters: [] },
 };
 
-const BrushTools = ({ settings, onSettingsChange }: { settings: any; onSettingsChange: any }) => (
-  <div>
-    <Slider
-      defaultValue={100}
-      label="Brush Size"
-      max={200}
-      min={1}
-      onChange={(e: any) => onSettingsChange((s: any) => ({ ...s, size: Number(e.target.value) }))}
-      step={1}
-      value={settings.size}
-      fillOrigin="min"
-    />
-    <Slider
-      defaultValue={50}
-      label="Brush Feather"
-      max={100}
-      min={0}
-      onChange={(e: any) => onSettingsChange((s: any) => ({ ...s, feather: Number(e.target.value) }))}
-      step={1}
-      value={settings.feather}
-      fillOrigin="min"
-    />
-    <div className="grid grid-cols-2 gap-2 pt-2">
-      <button
-        className={`p-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${settings.tool === ToolType.Brush ? 'text-primary bg-surface' : 'bg-surface text-text-secondary hover:bg-card-active'}`}
-        onClick={() => onSettingsChange((s: any) => ({ ...s, tool: ToolType.Brush }))}
-      >
-        Brush
-      </button>
-      <button
-        className={`p-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${settings.tool === ToolType.Eraser ? 'text-primary bg-surface' : 'bg-surface text-text-secondary hover:bg-card-active'}`}
-        onClick={() => onSettingsChange((s: any) => ({ ...s, tool: ToolType.Eraser }))}
-      >
-        Eraser
-      </button>
+const BrushTools = ({ settings, onSettingsChange }: { settings: any; onSettingsChange: any }) => {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <Slider
+        defaultValue={100}
+        label={t('masks.brush_size')}
+        max={200}
+        min={1}
+        onChange={(e: any) => onSettingsChange((s: any) => ({ ...s, size: Number(e.target.value) }))}
+        step={1}
+        value={settings.size}
+        fillOrigin="min"
+      />
+      <Slider
+        defaultValue={50}
+        label={t('masks.brush_feather')}
+        max={100}
+        min={0}
+        onChange={(e: any) => onSettingsChange((s: any) => ({ ...s, feather: Number(e.target.value) }))}
+        step={1}
+        value={settings.feather}
+        fillOrigin="min"
+      />
+      <div className="grid grid-cols-2 gap-2 pt-2">
+        <button
+          className={`p-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${settings.tool === ToolType.Brush ? 'text-primary bg-surface' : 'bg-surface text-text-secondary hover:bg-card-active'}`}
+          onClick={() => onSettingsChange((s: any) => ({ ...s, tool: ToolType.Brush }))}
+        >
+          {t('masks.brush')}
+        </button>
+        <button
+          className={`p-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${settings.tool === ToolType.Eraser ? 'text-primary bg-surface' : 'bg-surface text-text-secondary hover:bg-card-active'}`}
+          onClick={() => onSettingsChange((s: any) => ({ ...s, tool: ToolType.Eraser }))}
+        >
+          {t('masks.eraser')}
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const FlowBrushTool = ({
   flow,
@@ -211,21 +215,24 @@ const FlowBrushTool = ({
   onFlowChange: (flow: number) => void;
   settings: any;
   onSettingsChange: any;
-}) => (
-  <div className="space-y-4 border-t border-surface">
-    <Slider
-      defaultValue={10}
-      label="Flow"
-      max={100}
-      min={0}
-      onChange={(e: ChangeEvent<HTMLInputElement>) => onFlowChange(Number(e.target.value))}
-      step={1}
-      value={flow}
-      fillOrigin="min"
-    />
-    <BrushTools settings={settings} onSettingsChange={onSettingsChange} />
-  </div>
-);
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-4 border-t border-surface">
+      <Slider
+        defaultValue={10}
+        label={t('masks.flow')}
+        max={100}
+        min={0}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => onFlowChange(Number(e.target.value))}
+        step={1}
+        value={flow}
+        fillOrigin="min"
+      />
+      <BrushTools settings={settings} onSettingsChange={onSettingsChange} />
+    </div>
+  );
+};
 
 function DepthRangePicker({
   minDepth,
@@ -240,6 +247,7 @@ function DepthRangePicker({
   maxFade: number;
   onChange: (values: { minDepth: number; maxDepth: number; minFade: number; maxFade: number }) => void;
 }) {
+  const { t: depthT } = useTranslation();
   const trackRef = useRef<HTMLDivElement>(null);
   const [activeHandle, setActiveHandle] = useState<string | null>(null);
   const [dragValues, setDragValues] = useState<{
@@ -530,8 +538,8 @@ function DepthRangePicker({
         ))}
       </div>
       <Text as="div" variant={TextVariants.small} className="flex justify-between select-none px-1">
-        <span>Near</span>
-        <span>Far</span>
+        <span>{depthT('masks.near')}</span>
+        <span>{depthT('masks.far')}</span>
       </Text>
     </div>
   );
@@ -567,6 +575,7 @@ export default function MasksPanel({
   waveformHeight,
   setWaveformHeight,
 }: MasksPanelProps) {
+  const { t } = useTranslation();
   const [expandedContainers, setExpandedContainers] = useState<Set<string>>(new Set());
   const [activeDragItem, setActiveDragItem] = useState<DragData | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -751,7 +760,7 @@ export default function MasksPanel({
     const newContainer = {
       ...INITIAL_MASK_CONTAINER,
       id: uuidv4(),
-      name: `Mask ${adjustments.masks.length + 1}`,
+      name: `${t('masks.default_name')} ${adjustments.masks.length + 1}`,
       subMasks: [subMask],
     };
     setAdjustments((prev: Adjustments) => ({ ...prev, masks: [...(prev.masks || []), newContainer] }));
@@ -805,7 +814,7 @@ export default function MasksPanel({
     event.stopPropagation();
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const options = OTHERS_MASK_TYPES.map((maskType) => ({
-      label: maskType.name,
+      label: t(maskType.nameKey),
       icon: maskType.icon,
       onClick: () => handleGridClick(maskType.type),
       onRightClick: () => handleGridClick(maskType.type, true),
@@ -820,7 +829,7 @@ export default function MasksPanel({
 
     const buildMenu = (types: MaskType[]) =>
       types.map((maskType: MaskType) => ({
-        label: maskType.name,
+        label: t(maskType.nameKey),
         icon: maskType.icon,
         disabled: maskType.disabled,
         onClick: () => {
@@ -835,13 +844,13 @@ export default function MasksPanel({
     const options = MASK_PANEL_CREATION_TYPES.map((maskType: MaskType) => {
       if (maskType.id === 'others') {
         return {
-          label: maskType.name,
+          label: t(maskType.nameKey),
           icon: maskType.icon,
           submenu: buildMenu(OTHERS_MASK_TYPES),
         };
       }
       return {
-        label: maskType.name,
+        label: t(maskType.nameKey),
         icon: maskType.icon,
         disabled: maskType.disabled,
         onClick: () => {
@@ -894,7 +903,7 @@ export default function MasksPanel({
 
     clonedContainer.id = uuidv4();
     clonedContainer.invert = options.invert ? !clonedContainer.invert : clonedContainer.invert;
-    clonedContainer.name = options.rename === false ? clonedContainer.name : `${container.name} Copy`;
+    clonedContainer.name = options.rename === false ? clonedContainer.name : `${container.name}${t('masks.name_copy_suffix')}`;
     clonedContainer.subMasks = clonedContainer.subMasks.map((subMask: SubMask) => ({
       ...subMask,
       id: uuidv4(),
@@ -908,7 +917,7 @@ export default function MasksPanel({
 
     clonedSubMask.id = uuidv4();
     clonedSubMask.invert = options.invert ? !clonedSubMask.invert : clonedSubMask.invert;
-    clonedSubMask.name = options.rename === false ? clonedSubMask.name : `${getSubMaskName(subMask)} Copy`;
+    clonedSubMask.name = options.rename === false ? clonedSubMask.name : `${getSubMaskName(subMask)}${t('masks.name_copy_suffix')}`;
 
     return clonedSubMask;
   };
@@ -968,7 +977,7 @@ export default function MasksPanel({
   const handleDuplicateAndInvertContainer = (container: MaskContainer) => {
     const containerIndex = adjustments.masks.findIndex((mask) => mask.id === container.id);
     const duplicatedContainer = cloneMaskContainerData(container, { invert: true, rename: false });
-    duplicatedContainer.name = `${container.name} Inverted`;
+    duplicatedContainer.name = `${container.name}${t('masks.name_inverted_suffix')}`;
 
     insertMaskContainer(duplicatedContainer, containerIndex >= 0 ? containerIndex + 1 : undefined);
   };
@@ -999,7 +1008,7 @@ export default function MasksPanel({
     const duplicatedSubMask = cloneSubMaskData(subMask, { invert: true, rename: false });
     const newContainer = cloneMaskContainerData(parentContainer, { rename: false });
 
-    newContainer.name = `${getSubMaskName(subMask)} Inverted`;
+    newContainer.name = `${getSubMaskName(subMask)}${t('masks.name_inverted_suffix')}`;
     newContainer.subMasks = [duplicatedSubMask];
     newContainer.invert = false;
 
@@ -1101,7 +1110,7 @@ export default function MasksPanel({
           const newContainer = {
             ...INITIAL_MASK_CONTAINER,
             id: uuidv4(),
-            name: `Mask ${newMasks.length + 1}`,
+            name: `${t('masks.default_name')} ${newMasks.length + 1}`,
             subMasks: [movedSubMask],
           };
           newMasks.push(newContainer);
@@ -1161,13 +1170,13 @@ export default function MasksPanel({
     e.preventDefault();
     const allTypes = [...MASK_PANEL_CREATION_TYPES.filter((m) => m.id !== 'others'), ...OTHERS_MASK_TYPES];
     const newMaskSubMenu = allTypes.map((m) => ({
-      label: m.name,
+      label: t(m.nameKey),
       icon: m.icon,
       onClick: () => handleAddMaskContainer(m.type),
     }));
     showContextMenu(e.clientX, e.clientY, [
-      { label: 'Paste Mask', icon: ClipboardPaste, disabled: !copiedMask, onClick: () => handlePasteMask() },
-      { label: 'Add New Mask', icon: Plus, submenu: newMaskSubMenu },
+      { label: t('masks.ctx_paste_mask'), icon: ClipboardPaste, disabled: !copiedMask, onClick: () => handlePasteMask() },
+      { label: t('masks.add_new_mask'), icon: Plus, submenu: newMaskSubMenu },
     ]);
   };
 
@@ -1184,7 +1193,7 @@ export default function MasksPanel({
         onContextMenu={handlePanelContextMenu}
       >
         <div className="p-4 flex justify-between items-center shrink-0 border-b border-surface">
-          <Text variant={TextVariants.title}>Masking</Text>
+          <Text variant={TextVariants.title}>{t('masks.title')}</Text>
           <div className="flex items-center gap-1">
             <button
               className={clsx(
@@ -1192,14 +1201,14 @@ export default function MasksPanel({
                 isWaveformVisible ? 'bg-surface hover:bg-card-active' : 'hover:bg-surface',
               )}
               onClick={onToggleWaveform}
-              data-tooltip="Toggle Analytics Display"
+              data-tooltip={t('masks.toggle_analytics')}
             >
               <ChartArea size={18} />
             </button>
             <button
               className="p-2 rounded-full hover:bg-surface transition-colors"
               onClick={handleResetAllMasks}
-              data-tooltip="Reset Masking"
+              data-tooltip={t('masks.reset_masking')}
             >
               <RotateCcw size={18} />
             </button>
@@ -1346,7 +1355,7 @@ export default function MasksPanel({
                   <div className="p-0.5">
                     <Plus size={18} />
                   </div>
-                  <span>Add New Mask</span>
+                  <span>{t('masks.add_new_mask')}</span>
                 </Text>
               </motion.div>
             )}
@@ -1363,7 +1372,7 @@ export default function MasksPanel({
                 className="flex-1 min-h-0"
               >
                 <Text variant={TextVariants.heading} className="mb-2">
-                  Mask Adjustments
+                  {t('masks.mask_adjustments')}
                 </Text>
                 <SettingsPanel
                   container={activeContainer}
@@ -1455,6 +1464,7 @@ export default function MasksPanel({
 }
 
 function NewMaskDropZone({ isOver }: { isOver: boolean }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       layout
@@ -1464,12 +1474,13 @@ function NewMaskDropZone({ isOver }: { isOver: boolean }) {
       transition={{ duration: 0.2, ease: 'easeOut' }}
       className={`p-4 rounded-lg text-center ${isOver ? 'border border-accent/80 bg-bg-tertiary/50' : ''}`}
     >
-      <Text weight={TextWeights.medium}>Drop here to create a new mask</Text>
+      <Text weight={TextWeights.medium}>{t('masks.drop_to_create')}</Text>
     </motion.div>
   );
 }
 
 function DraggableGridItem({ maskType, onClick, onRightClick, isDraggable, activeMaskContainerId }: any) {
+  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `create-${maskType.id || maskType.type}`,
     data: { type: 'Creation', maskType: maskType.type },
@@ -1477,12 +1488,12 @@ function DraggableGridItem({ maskType, onClick, onRightClick, isDraggable, activ
   });
 
   const tooltip = maskType.disabled
-    ? 'Coming Soon'
+    ? t('masks.coming_soon')
     : maskType.id === 'others'
-      ? 'Show More Mask Types'
+      ? t('masks.show_more_types')
       : activeMaskContainerId
-        ? `Add ${maskType.name} to Current Mask or Create New (Right-click)`
-        : `Create New ${maskType.name} Mask`;
+        ? t('masks.add_to_mask_or_create', { name: t(maskType.nameKey) })
+        : t('masks.create_new_mask', { name: t(maskType.nameKey) });
 
   return (
     <button
@@ -1505,7 +1516,7 @@ function DraggableGridItem({ maskType, onClick, onRightClick, isDraggable, activ
     >
       <maskType.icon size={24} />{' '}
       <Text as="span" variant={TextVariants.small} color={TextColors.primary}>
-        {maskType.name}
+        {t(maskType.nameKey)}
       </Text>
     </button>
   );
@@ -1546,6 +1557,7 @@ function ContainerRow({
   setIsMaskControlHovered,
   onAddComponent,
 }: any) {
+  const { t } = useTranslation();
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: container.id,
     data: { type: 'Container', item: container },
@@ -1596,24 +1608,24 @@ function ContainerRow({
         .filter(Boolean);
     showContextMenu(e.clientX, e.clientY, [
       {
-        label: 'Rename',
+        label: t('masks.ctx_rename'),
         icon: FileEdit,
         onClick: () => {
           setRenamingId(container.id);
           setTempName(container.name);
         },
       },
-      { label: 'Duplicate Mask', icon: PlusSquare, onClick: () => handleDuplicate(container) },
-      { label: 'Duplicate and Invert Mask', icon: RotateCcw, onClick: () => handleDuplicateAndInvert(container) },
-      { label: 'Copy Mask', icon: Copy, onClick: () => copyMaskToClipboard(container) },
+      { label: t('masks.ctx_duplicate_mask'), icon: PlusSquare, onClick: () => handleDuplicate(container) },
+      { label: t('masks.ctx_duplicate_invert_mask'), icon: RotateCcw, onClick: () => handleDuplicateAndInvert(container) },
+      { label: t('masks.ctx_copy_mask'), icon: Copy, onClick: () => copyMaskToClipboard(container) },
       {
-        label: 'Paste Mask',
+        label: t('masks.ctx_paste_mask'),
         icon: ClipboardPaste,
         disabled: !copiedMask,
         onClick: () => handlePasteMask(container.id),
       },
       {
-        label: 'Paste Mask Adjustments',
+        label: t('masks.ctx_paste_mask_adj'),
         icon: ClipboardPaste,
         disabled: !copiedMask,
         onClick: () => {
@@ -1623,20 +1635,20 @@ function ContainerRow({
         },
       },
       {
-        label: 'Apply Preset',
+        label: t('masks.ctx_apply_preset'),
         icon: Bookmark,
         submenu: generatePresetSubmenu(presets).length
           ? generatePresetSubmenu(presets)
-          : [{ label: 'No presets', disabled: true }],
+          : [{ label: t('masks.ctx_no_presets'), disabled: true }],
       },
       { type: OPTION_SEPARATOR },
       {
-        label: 'Reset Mask Adjustments',
+        label: t('masks.ctx_reset_mask_adj'),
         icon: RotateCcw,
         onClick: () =>
           updateContainer(container.id, { adjustments: JSON.parse(JSON.stringify(INITIAL_MASK_ADJUSTMENTS)) }),
       },
-      { label: 'Delete Mask', icon: Trash2, isDestructive: true, onClick: () => handleDelete(container.id) },
+      { label: t('masks.ctx_delete_mask'), icon: Trash2, isDestructive: true, onClick: () => handleDelete(container.id) },
     ]);
   };
 
@@ -1796,7 +1808,7 @@ function ContainerRow({
                     <div className="relative w-4 h-4 ml-1 shrink-0 flex items-center justify-center">
                       <Plus size={16} />
                     </div>
-                    <span className="select-none">Add New Component</span>
+                    <span className="select-none">{t('masks.add_new_component')}</span>
                   </Text>
                 </motion.div>
               )}
@@ -1831,6 +1843,7 @@ function SubMaskRow({
   setTempName,
   setIsMaskControlHovered,
 }: any) {
+  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: subMask.id,
     data: { type: 'SubMask', item: subMask, parentId: containerId },
@@ -1884,19 +1897,19 @@ function SubMaskRow({
     e.stopPropagation();
     showContextMenu(e.clientX, e.clientY, [
       {
-        label: 'Rename',
+        label: t('masks.ctx_rename'),
         icon: FileEdit,
         onClick: () => {
           setRenamingId(subMask.id);
           setTempName(getSubMaskName(subMask));
         },
       },
-      { label: 'Duplicate Component', icon: PlusSquare, onClick: handleDuplicate },
-      { label: 'Duplicate and Invert Component', icon: RotateCcw, onClick: handleDuplicateAndInvert },
-      { label: 'Copy Component', icon: Copy, onClick: handleCopy },
-      { label: 'Paste Component', icon: ClipboardPaste, disabled: !hasCopiedSubMask, onClick: handlePaste },
+      { label: t('masks.ctx_duplicate_component'), icon: PlusSquare, onClick: handleDuplicate },
+      { label: t('masks.ctx_duplicate_invert_component'), icon: RotateCcw, onClick: handleDuplicateAndInvert },
+      { label: t('masks.ctx_copy_component'), icon: Copy, onClick: handleCopy },
+      { label: t('masks.ctx_paste_component'), icon: ClipboardPaste, disabled: !hasCopiedSubMask, onClick: handlePaste },
       { type: OPTION_SEPARATOR },
-      { label: 'Delete Component', icon: Trash2, isDestructive: true, onClick: handleDelete },
+      { label: t('masks.ctx_delete_component'), icon: Trash2, isDestructive: true, onClick: handleDelete },
     ]);
   };
 
@@ -2011,7 +2024,7 @@ function SubMaskRow({
         </button>
         <button
           className="p-1 hover:text-red-500 text-text-secondary"
-          data-tooltip="Delete Component"
+          data-tooltip={t('masks.delete_component')}
           onClick={(e) => {
             e.stopPropagation();
             handleDelete();
@@ -2046,6 +2059,7 @@ function SettingsPanel({
   presets,
   onGenerateAiDepthMask,
 }: any) {
+  const { t } = useTranslation();
   const { showContextMenu } = useContextMenu();
   const isActive = !!container;
   const presetButtonRef = useRef<HTMLButtonElement>(null);
@@ -2095,7 +2109,7 @@ function SettingsPanel({
     if (presetButtonRef.current) {
       const rect = presetButtonRef.current.getBoundingClientRect();
       const presetSubmenu = generatePresetSubmenu(presets);
-      const options = presetSubmenu.length > 0 ? presetSubmenu : [{ label: 'No presets found', disabled: true }];
+      const options = presetSubmenu.length > 0 ? presetSubmenu : [{ label: t('masks.no_presets_found'), disabled: true }];
       showContextMenu(rect.left, rect.bottom + 5, options);
     }
   };
@@ -2199,20 +2213,20 @@ function SettingsPanel({
     const sectionTitle = sectionName.charAt(0).toUpperCase() + sectionName.slice(1);
 
     const pasteLabel = copiedSectionAdjustments
-      ? `Paste ${copiedSectionAdjustments.section.charAt(0).toUpperCase() + copiedSectionAdjustments.section.slice(1)} Settings`
-      : 'Paste Settings';
+      ? t('masks.paste_section_settings', { section: copiedSectionAdjustments.section.charAt(0).toUpperCase() + copiedSectionAdjustments.section.slice(1) })
+      : t('masks.paste_settings');
 
     showContextMenu(event.clientX, event.clientY, [
       {
         icon: Copy,
-        label: `Copy ${sectionTitle} Settings`,
+        label: t('masks.copy_section_settings', { section: sectionTitle }),
         onClick: handleCopy,
       },
       { label: pasteLabel, icon: ClipboardPaste, onClick: handlePaste, disabled: !isPasteAllowed },
       { type: OPTION_SEPARATOR },
       {
         icon: RotateCcw,
-        label: `Reset ${sectionTitle} Settings`,
+        label: t('masks.reset_section_settings', { section: sectionTitle }),
         onClick: handleReset,
       },
     ]);
@@ -2245,22 +2259,22 @@ function SettingsPanel({
           {!isComponentMode && (
             <div className="flex justify-between items-center">
               <Text variant={TextVariants.label} className="select-none">
-                Apply Preset
+                {t('masks.apply_preset')}
               </Text>
               <button
                 ref={presetButtonRef}
                 onClick={handlePresetSelectClick}
                 className="text-sm text-text-primary text-right select-none cursor-pointer hover:text-accent transition-colors"
-                data-tooltip="Select a preset to apply"
+                data-tooltip={t('masks.select_preset')}
               >
-                Select
+                {t('masks.select')}
               </button>
             </div>
           )}
 
           <Slider
             defaultValue={100}
-            label="Opacity"
+            label={t('masks.opacity')}
             max={100}
             min={0}
             value={(isComponentMode ? activeSubMask.opacity : displayContainer.opacity) ?? 100}
@@ -2285,7 +2299,7 @@ function SettingsPanel({
                 >
                   <Loader2 size={16} className="animate-spin shrink-0" />
                   <div className="leading-relaxed">
-                    <Text variant={TextVariants.small}>AI Model Downloading: </Text>
+                    <Text variant={TextVariants.small}>{t('masks.ai_model_downloading')} </Text>
                     <span>{aiModelDownloadStatus}</span>
                   </div>
                 </Text>
@@ -2304,7 +2318,7 @@ function SettingsPanel({
               {subMaskConfig.parameters?.map((param: any) => (
                 <Slider
                   key={param.key}
-                  label={param.label}
+                  label={t(param.labelKey)}
                   min={param.min}
                   max={param.max}
                   step={param.step}

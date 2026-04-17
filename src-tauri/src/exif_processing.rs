@@ -11,6 +11,58 @@ use little_exif::metadata::Metadata;
 use little_exif::rational::{iR64, uR64};
 use rawler::decoders::RawMetadata;
 
+/// Decode an EXIF ASCII-type field's raw bytes as UTF-8.
+/// kamadak-exif's display_value() casts each byte to a Latin-1 char, which
+/// corrupts UTF-8 multi-byte sequences (e.g. Chinese text appears as spaces
+/// or garbage). We read the raw bytes directly and decode as UTF-8 instead.
+fn decode_ascii_field(vecs: &[Vec<u8>]) -> String {
+    vecs.iter()
+        .map(|v| {
+            // Strip trailing null bytes
+            let trimmed: Vec<u8> = v.iter().copied().filter(|&b| b != 0).collect();
+            // Try strict UTF-8 first; fall back to lossy for GBK / Latin-1
+            String::from_utf8(trimmed.clone())
+                .unwrap_or_else(|_| String::from_utf8_lossy(&trimmed).into_owned())
+        })
+        .filter(|s| !s.trim().is_empty())
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// Decode EXIF UserComment field.
+/// The first 8 bytes are a charset identifier:
+///   b"ASCII\0\0\0"   → remaining bytes are ASCII/UTF-8
+///   b"UNICODE\0"     → remaining bytes are UTF-16LE
+///   b"JIS\0\0\0\0\0" → JIS (decoded lossy as Latin-1 fallback)
+///   [0u8; 8]         → undefined, try UTF-8 lossy
+fn decode_user_comment(bytes: &[u8]) -> Option<String> {
+    if bytes.len() <= 8 {
+        return None;
+    }
+    let charset = &bytes[..8];
+    let content = &bytes[8..];
+
+    let text = if charset.starts_with(b"UNICODE") {
+        // UTF-16LE
+        let utf16: Vec<u16> = content
+            .chunks_exact(2)
+            .map(|c| u16::from_le_bytes([c[0], c[1]]))
+            .collect();
+        String::from_utf16_lossy(&utf16)
+            .trim_matches('\0')
+            .trim()
+            .to_string()
+    } else {
+        // ASCII, JIS, undefined: treat as UTF-8 with lossy fallback
+        String::from_utf8_lossy(content)
+            .trim_matches('\0')
+            .trim()
+            .to_string()
+    };
+
+    if text.is_empty() { None } else { Some(text) }
+}
+
 fn to_ur64(val: &exif::Rational) -> uR64 {
     uR64 {
         nominator: val.num,
@@ -204,10 +256,25 @@ pub fn read_exif_data(path: &str, file_bytes: &[u8]) -> HashMap<String, String> 
     let mut exif_data = HashMap::new();
     if let Some(exif) = read_exif(file_bytes) {
         for field in exif.fields() {
-            exif_data.insert(
-                field.tag.to_string(),
-                field.display_value().with_unit(&exif).to_string(),
-            );
+            let val = match &field.value {
+                exif::Value::Undefined(bytes, _) if field.tag == exif::Tag::UserComment => {
+                    match decode_user_comment(bytes) {
+                        Some(text) => text,
+                        None => continue,
+                    }
+                }
+                exif::Value::Ascii(vecs) => {
+                    let s = decode_ascii_field(vecs);
+                    if s.trim().is_empty() {
+                        continue;
+                    }
+                    s
+                }
+                _ => field.display_value().with_unit(&exif).to_string(),
+            };
+            if !val.trim().is_empty() {
+                exif_data.insert(field.tag.to_string(), val);
+            }
         }
     }
     exif_data
@@ -297,8 +364,18 @@ pub fn extract_metadata(file_bytes: &[u8]) -> Option<HashMap<String, String>> {
                         fmt_date_str(field.display_value().to_string()),
                     );
                 }
+                exif::Tag::UserComment => {
+                    if let exif::Value::Undefined(bytes, _) = &field.value {
+                        if let Some(text) = decode_user_comment(bytes) {
+                            map.insert("UserComment".to_string(), text);
+                        }
+                    }
+                }
                 _ => {
-                    let val = field.display_value().with_unit(&exif_obj).to_string();
+                    let val = match &field.value {
+                        exif::Value::Ascii(vecs) => decode_ascii_field(vecs),
+                        _ => field.display_value().with_unit(&exif_obj).to_string(),
+                    };
                     if !val.trim().is_empty() {
                         map.insert(field.tag.to_string(), val);
                     }

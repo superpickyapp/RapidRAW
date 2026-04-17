@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core';
 import { ArrowLeft, CheckCircle2, ChevronDown, Loader2, Search, Users, Github } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { Invokes, SupportedTypes, ImageFile } from '../ui/AppProperties';
@@ -18,10 +19,7 @@ interface CommunityPreset {
   adjustments: Record<string, any>;
 }
 
-const SORT_METHODS: {
-  value: string;
-  label: string;
-}[] = [{ value: 'name', label: 'Name (A-Z)' }];
+const SORT_METHODS_BASE: { value: string; labelKey: string }[] = [{ value: 'name', labelKey: 'app.community_sort_name_az' }];
 
 const containerVariants = {
   hidden: { opacity: 1 },
@@ -59,12 +57,14 @@ const shuffleArray = (array: any[]) => {
 };
 
 const CommunityPage = ({ onBackToLibrary, imageList, currentFolderPath }: CommunityPageProps) => {
+  const { t } = useTranslation();
   const [presets, setPresets] = useState<CommunityPreset[]>([]);
   const [previews, setPreviews] = useState<Record<string, string | null>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [previewImagePaths, setPreviewImagePaths] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
+  const SORT_METHODS = SORT_METHODS_BASE.map((o) => ({ value: o.value, label: t(o.labelKey) }));
   const [downloadStatus, setDownloadStatus] = useState<Record<string, 'idle' | 'downloading' | 'success'>>({});
   const [allPreviewsLoaded, setAllPreviewsLoaded] = useState(false);
 
@@ -214,9 +214,9 @@ const CommunityPage = ({ onBackToLibrary, imageList, currentFolderPath }: Commun
           </Button>
           <div>
             <Text variant={TextVariants.headline} className="flex items-center gap-2">
-              <Users /> Community Presets
+              <Users /> {t('app.community_presets')}
             </Text>
-            <Text>Discover presets created by the community.</Text>
+            <Text>{t('app.community_discover')}</Text>
           </div>
         </div>
       </header>
@@ -226,13 +226,13 @@ const CommunityPage = ({ onBackToLibrary, imageList, currentFolderPath }: Commun
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search presets..."
+            placeholder={t('app.community_search_placeholder')}
             className="pl-10 w-64"
           />
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary" />
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <Text variant={TextVariants.label}>Sort by:</Text>
+          <Text variant={TextVariants.label}>{t('library.sort_by')}:</Text>
           <Dropdown
             options={SORT_METHODS.map(({ value, label }) => ({ value, label }))}
             value={sortBy}
@@ -250,7 +250,7 @@ const CommunityPage = ({ onBackToLibrary, imageList, currentFolderPath }: Commun
             className="flex items-center justify-center h-full "
           >
             <Loader2 className="h-8 w-8 animate-spin mr-2" />
-            Fetching presets from GitHub...
+            {t('app.community_fetching')}
           </Text>
         ) : (
           <motion.div
@@ -291,15 +291,15 @@ const CommunityPage = ({ onBackToLibrary, imageList, currentFolderPath }: Commun
                           disabled={status !== 'idle'}
                           className="shadow-lg"
                         >
-                          {status === 'idle' && <>Save</>}
+                          {status === 'idle' && <>{t('app.community_save')}</>}
                           {status === 'downloading' && (
                             <>
-                              <Loader2 size={14} className="mr-2 animate-spin" /> Saving...
+                              <Loader2 size={14} className="mr-2 animate-spin" /> {t('app.community_saving')}
                             </>
                           )}
                           {status === 'success' && (
                             <>
-                              <CheckCircle2 size={14} className="mr-2" /> Saved
+                              <CheckCircle2 size={14} className="mr-2" /> {t('app.community_saved')}
                             </>
                           )}
                         </Button>
@@ -310,7 +310,7 @@ const CommunityPage = ({ onBackToLibrary, imageList, currentFolderPath }: Commun
                         {preset.name}
                       </Text>
                       <Text variant={TextVariants.small} className="font-['cursive'] italic">
-                        by {preset.creator}
+                        {t('app.community_by_creator', { creator: preset.creator })}
                       </Text>
                     </div>
                   </motion.div>
@@ -327,7 +327,7 @@ const CommunityPage = ({ onBackToLibrary, imageList, currentFolderPath }: Commun
             className="text-center mt-8 py-4"
           >
             <Text>
-              <p>Want to get your preset featured?</p>
+              <p>{t('app.community_get_featured')}</p>
               <a
                 href="https://github.com/CyberTimon/RapidRAW-Presets/issues/new?assignees=&labels=preset-submission&template=preset_submission.md&title=Preset+Submission%3A+%5BYour+Preset+Name%5D"
                 target="_blank"
@@ -335,7 +335,7 @@ const CommunityPage = ({ onBackToLibrary, imageList, currentFolderPath }: Commun
                 className="text-accent hover:underline inline-flex items-center gap-2"
               >
                 <Github size={14} />
-                Create an issue on GitHub
+                {t('app.community_github_issue')}
               </a>
             </Text>
           </motion.div>

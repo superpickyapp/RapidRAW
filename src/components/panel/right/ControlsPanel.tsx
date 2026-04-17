@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { RotateCcw, Copy, ClipboardPaste, Aperture, ChartArea } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 import BasicAdjustments from '../../adjustments/Basic';
 import CurveGraph from '../../adjustments/Curves';
 import ColorPanel from '../../adjustments/Color';
@@ -74,6 +75,7 @@ export default function Controls({
   waveformHeight,
   setWaveformHeight,
 }: ControlsProps) {
+  const { t } = useTranslation();
   const { showContextMenu } = useContextMenu();
   const [isResizingWaveform, setIsResizingWaveform] = useState<boolean>(false);
 
@@ -178,21 +180,19 @@ export default function Controls({
 
     const isPasteAllowed = copiedSectionAdjustments && copiedSectionAdjustments.section === sectionName;
     const pasteLabel = copiedSectionAdjustments
-      ? `Paste ${
-          copiedSectionAdjustments.section.charAt(0).toUpperCase() + copiedSectionAdjustments.section.slice(1)
-        } Settings`
-      : 'Paste Settings';
+      ? t('app.controls_paste_section', { section: copiedSectionAdjustments.section.charAt(0).toUpperCase() + copiedSectionAdjustments.section.slice(1) })
+      : t('app.controls_paste_settings');
 
     const options: Array<ControlsPanelOption> = [
       {
-        label: `Copy ${sectionName.charAt(0).toUpperCase() + sectionName.slice(1)} Settings`,
+        label: t('app.controls_copy_section', { section: sectionName.charAt(0).toUpperCase() + sectionName.slice(1) }),
         icon: Copy,
         onClick: handleCopy,
       },
       { label: pasteLabel, icon: ClipboardPaste, onClick: handlePaste, disabled: !isPasteAllowed },
       { type: OPTION_SEPARATOR },
       {
-        label: `Reset ${sectionName.charAt(0).toUpperCase() + sectionName.slice(1)} Settings`,
+        label: t('app.controls_reset_section', { section: sectionName.charAt(0).toUpperCase() + sectionName.slice(1) }),
         icon: RotateCcw,
         onClick: handleReset,
       },
@@ -204,13 +204,13 @@ export default function Controls({
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 flex justify-between items-center shrink-0 border-b border-surface">
-        <Text variant={TextVariants.title}>Adjustments</Text>
+        <Text variant={TextVariants.title}>{t('app.controls_adjustments')}</Text>
         <div className="flex items-center gap-1">
           <button
             className="p-2 rounded-full hover:bg-surface disabled:cursor-not-allowed transition-colors"
             disabled={!selectedImage?.isReady}
             onClick={handleAutoAdjustments}
-            data-tooltip="Auto Adjust Image"
+            data-tooltip={t('app.controls_auto_adjust')}
           >
             <Aperture size={18} />
           </button>
@@ -220,7 +220,7 @@ export default function Controls({
               isWaveformVisible ? 'bg-surface hover:bg-card-active' : 'hover:bg-surface',
             )}
             onClick={onToggleWaveform}
-            data-tooltip="Toggle Analytics Display"
+            data-tooltip={t('app.controls_toggle_analytics')}
           >
             <ChartArea size={18} />
           </button>
@@ -228,7 +228,7 @@ export default function Controls({
             className="p-2 rounded-full hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             disabled={!selectedImage}
             onClick={handleResetAdjustments}
-            data-tooltip="Reset Adjustments"
+            data-tooltip={t('app.controls_reset')}
           >
             <RotateCcw size={18} />
           </button>

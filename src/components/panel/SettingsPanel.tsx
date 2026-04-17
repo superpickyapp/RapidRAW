@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import {
   ArrowLeft,
   Cloud,
@@ -111,38 +113,38 @@ const thumbnailResolutions: OptionItem<number>[] = [
   { value: 1080, label: '1080px' },
 ];
 
-const zoomMultiplierOptions: OptionItem<number>[] = [
-  { value: 1.0, label: '1.0x (Native)' },
+const zoomMultiplierOptionsBase = [
+  { value: 1.0, labelKey: 'settings.zoom_native' },
   { value: 0.75, label: '0.75x' },
-  { value: 0.5, label: '0.50x (Half)' },
+  { value: 0.5, labelKey: 'settings.zoom_half' },
   { value: 0.25, label: '0.25x' },
 ];
 
-const livePreviewQualityOptions: OptionItem<string>[] = [
-  { value: 'full', label: 'Full Resolution' },
-  { value: 'high', label: 'High Quality' },
-  { value: 'performance', label: 'Performance' },
+const livePreviewQualityOptionsBase = [
+  { value: 'full', labelKey: 'settings.livepreview_full' },
+  { value: 'high', labelKey: 'settings.livepreview_high' },
+  { value: 'performance', labelKey: 'settings.livepreview_performance' },
 ];
 
-const backendOptions: OptionItem<string>[] = [
-  { value: 'auto', label: 'Auto' },
-  { value: 'vulkan', label: 'Vulkan' },
-  { value: 'dx12', label: 'DirectX 12' },
-  { value: 'metal', label: 'Metal' },
-  { value: 'gl', label: 'OpenGL' },
+const backendOptionsBase = [
+  { value: 'auto', labelKey: 'settings.backend_auto' },
+  { value: 'vulkan', labelKey: 'settings.backend_vulkan' },
+  { value: 'dx12', labelKey: 'settings.backend_dx12' },
+  { value: 'metal', labelKey: 'settings.backend_metal' },
+  { value: 'gl', labelKey: 'settings.backend_gl' },
 ];
 
-const linearRawOptions: OptionItem<string>[] = [
-  { value: 'auto', label: 'Auto' },
-  { value: 'gamma', label: 'Apply Gamma' },
-  { value: 'skip_calib', label: 'Skip Calibrate' },
-  { value: 'gamma_skip_calib', label: 'Apply Gamma & Skip Calibrate' },
+const linearRawOptionsBase = [
+  { value: 'auto', labelKey: 'settings.linear_raw_auto' },
+  { value: 'gamma', labelKey: 'settings.linear_raw_gamma' },
+  { value: 'skip_calib', labelKey: 'settings.linear_raw_skip_calib' },
+  { value: 'gamma_skip_calib', labelKey: 'settings.linear_raw_gamma_skip_calib' },
 ];
 
-const settingCategories = [
-  { id: 'general', label: 'General', icon: SlidersHorizontal },
-  { id: 'processing', label: 'Processing', icon: Cpu },
-  { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
+const settingCategoryDefs = [
+  { id: 'general', labelKey: 'settings.general', icon: SlidersHorizontal },
+  { id: 'processing', labelKey: 'settings.processing', icon: Cpu },
+  { id: 'shortcuts', labelKey: 'settings.shortcuts', icon: Keyboard },
 ];
 
 const KeybindItem = ({ keys, description }: KeybindItemProps) => (
@@ -188,7 +190,9 @@ const DataActionItem = ({
   isProcessing,
   message,
   title,
-}: DataActionItemProps) => (
+}: DataActionItemProps) => {
+  const { t } = useTranslation();
+  return (
   <div className="pb-8 border-b border-border-color last:border-b-0 last:pb-0">
     <Text variant={TextVariants.heading} className="mb-2">
       {title}
@@ -198,7 +202,7 @@ const DataActionItem = ({
     </Text>
     <Button variant="destructive" onClick={buttonAction} disabled={isProcessing || disabled}>
       {icon}
-      {isProcessing ? 'Processing...' : buttonText}
+      {isProcessing ? t('settings.processing_processing') : buttonText}
     </Button>
     {message && (
       <Text color={TextColors.accent} className="mt-3">
@@ -206,23 +210,25 @@ const DataActionItem = ({
       </Text>
     )}
   </div>
-);
+  );
+};
 
-const aiProviders = [
-  { id: 'cpu', label: 'CPU', icon: Cpu },
-  { id: 'ai-connector', label: 'AI Connector', icon: Server },
-  { id: 'cloud', label: 'Cloud', icon: Cloud },
+const aiProviderDefs = [
+  { id: 'cpu', labelKey: 'settings.builtin_ai', icon: Cpu },
+  { id: 'ai-connector', labelKey: 'settings.self_hosted', icon: Server },
+  { id: 'cloud', labelKey: 'settings.cloud_service', icon: Cloud },
 ];
 
 interface AiProviderSwitchProps {
   selectedProvider: string;
   onProviderChange: (provider: string) => void;
+  providers: { id: string; label: string; icon: any }[];
 }
 
-const AiProviderSwitch = ({ selectedProvider, onProviderChange }: AiProviderSwitchProps) => {
+const AiProviderSwitch = ({ selectedProvider, onProviderChange, providers }: AiProviderSwitchProps) => {
   return (
     <div className="relative flex w-full p-1 bg-bg-primary rounded-md border border-border-color">
-      {aiProviders.map((provider) => (
+      {providers.map((provider) => (
         <button
           key={provider.id}
           onClick={() => onProviderChange(provider.id)}
@@ -253,20 +259,21 @@ const AiProviderSwitch = ({ selectedProvider, onProviderChange }: AiProviderSwit
   );
 };
 
-const previewModes = [
-  { id: 'static', label: 'Fixed Resolution', icon: ImageIcon },
-  { id: 'dynamic', label: 'Dynamic', icon: Scaling },
+const previewModeDefs = [
+  { id: 'static', labelKey: 'settings.fixed_resolution', icon: ImageIcon },
+  { id: 'dynamic', labelKey: 'settings.dynamic', icon: Scaling },
 ];
 
 interface PreviewModeSwitchProps {
   mode: 'static' | 'dynamic';
   onModeChange: (mode: 'static' | 'dynamic') => void;
+  modes: { id: string; label: string; icon: any }[];
 }
 
-const PreviewModeSwitch = ({ mode, onModeChange }: PreviewModeSwitchProps) => {
+const PreviewModeSwitch = ({ mode, onModeChange, modes }: PreviewModeSwitchProps) => {
   return (
     <div className="relative flex w-full p-1 bg-bg-primary rounded-md border border-border-color">
-      {previewModes.map((item) => (
+      {modes.map((item) => (
         <button
           key={item.id}
           onClick={() => onModeChange(item.id as 'static' | 'dynamic')}
@@ -304,6 +311,30 @@ export default function SettingsPanel({
   onSettingsChange,
   rootPath,
 }: SettingsPanelProps) {
+  const { t } = useTranslation();
+  const settingCategories = settingCategoryDefs.map((c) => ({ ...c, label: t(c.labelKey) }));
+  const aiProviders = aiProviderDefs.map((p) => ({ ...p, label: t(p.labelKey) }));
+  const previewModes = previewModeDefs.map((m) => ({ ...m, label: t(m.labelKey) }));
+  const fontOptions = [
+    { value: 'poppins', label: t('settings.font_poppins') },
+    { value: 'system', label: t('settings.font_system') },
+  ];
+  const zoomMultiplierOptions: OptionItem<number>[] = zoomMultiplierOptionsBase.map((o) => ({
+    value: o.value,
+    label: 'labelKey' in o ? t(o.labelKey as string) : (o as any).label,
+  }));
+  const livePreviewQualityOptions: OptionItem<string>[] = livePreviewQualityOptionsBase.map((o) => ({
+    value: o.value,
+    label: t(o.labelKey),
+  }));
+  const backendOptions: OptionItem<string>[] = backendOptionsBase.map((o) => ({
+    value: o.value,
+    label: t(o.labelKey),
+  }));
+  const linearRawOptions: OptionItem<string>[] = linearRawOptionsBase.map((o) => ({
+    value: o.value,
+    label: t(o.labelKey),
+  }));
   const { user: _user } = useUser();
   const [isClearing, setIsClearing] = useState(false);
   const [clearMessage, setClearMessage] = useState('');
@@ -314,7 +345,7 @@ export default function SettingsPanel({
   const [isClearingTags, setIsClearingTags] = useState(false);
   const [tagsClearMessage, setTagsClearMessage] = useState('');
   const [confirmModalState, setConfirmModalState] = useState<ConfirmModalState>({
-    confirmText: 'Confirm',
+    confirmText: t('settings.confirm'),
     confirmVariant: 'primary',
     isOpen: false,
     message: '',
@@ -400,7 +431,7 @@ export default function SettingsPanel({
         setLogPath(path);
       } catch (error) {
         console.error('Failed to get log file path:', error);
-        setLogPath('Could not retrieve log file path.');
+        setLogPath(t('settings.log_path_error'));
       }
     };
     fetchLogPath();
@@ -482,10 +513,10 @@ export default function SettingsPanel({
 
   const executeClearSidecars = async () => {
     setIsClearing(true);
-    setClearMessage('Deleting sidecar files, please wait...');
+    setClearMessage(t('settings.deleting_sidecars'));
     try {
       const count: number = await invoke(Invokes.ClearAllSidecars, { rootPath: effectiveRootPath });
-      setClearMessage(`${count} sidecar files deleted successfully.`);
+      setClearMessage(t('settings.sidecars_deleted', { count }));
       onLibraryRefresh();
     } catch (err: any) {
       console.error('Failed to clear sidecars:', err);
@@ -500,22 +531,21 @@ export default function SettingsPanel({
 
   const handleClearSidecars = () => {
     setConfirmModalState({
-      confirmText: 'Delete All Edits',
+      confirmText: t('settings.delete_all_edits'),
       confirmVariant: 'destructive',
       isOpen: true,
-      message:
-        'Are you sure you want to delete all sidecar files?\n\nThis will permanently remove all your edits for all images inside the current base folder and its subfolders.',
+      message: t('settings.confirm_sidecar_msg'),
       onConfirm: executeClearSidecars,
-      title: 'Confirm Deletion',
+      title: t('settings.confirm_deletion'),
     });
   };
 
   const executeClearAiTags = async () => {
     setIsClearingAiTags(true);
-    setAiTagsClearMessage('Clearing AI tags from all sidecar files...');
+    setAiTagsClearMessage(t('settings.clearing_ai_tags_msg'));
     try {
       const count: number = await invoke(Invokes.ClearAiTags, { rootPath: effectiveRootPath });
-      setAiTagsClearMessage(`${count} files updated. AI tags removed.`);
+      setAiTagsClearMessage(t('settings.ai_tags_cleared', { count }));
       onLibraryRefresh();
     } catch (err: any) {
       console.error('Failed to clear AI tags:', err);
@@ -530,22 +560,21 @@ export default function SettingsPanel({
 
   const handleClearAiTags = () => {
     setConfirmModalState({
-      confirmText: 'Clear AI Tags',
+      confirmText: t('settings.clear_ai_tags_confirm'),
       confirmVariant: 'destructive',
       isOpen: true,
-      message:
-        'Are you sure you want to remove all AI-generated tags from all images in the current base folder?\n\nThis will not affect user-added tags. This action cannot be undone.',
+      message: t('settings.confirm_ai_tag_msg'),
       onConfirm: executeClearAiTags,
-      title: 'Confirm AI Tag Deletion',
+      title: t('settings.confirm_ai_tag_deletion'),
     });
   };
 
   const executeClearTags = async () => {
     setIsClearingTags(true);
-    setTagsClearMessage('Clearing all tags from sidecar files...');
+    setTagsClearMessage(t('settings.clearing_all_tags_msg'));
     try {
       const count: number = await invoke(Invokes.ClearAllTags, { rootPath: effectiveRootPath });
-      setTagsClearMessage(`${count} files updated. All non-color tags removed.`);
+      setTagsClearMessage(t('settings.all_tags_cleared', { count }));
       onLibraryRefresh();
     } catch (err: any) {
       console.error('Failed to clear tags:', err);
@@ -560,13 +589,12 @@ export default function SettingsPanel({
 
   const handleClearTags = () => {
     setConfirmModalState({
-      confirmText: 'Clear All Tags',
+      confirmText: t('settings.clear_all_tags'),
       confirmVariant: 'destructive',
       isOpen: true,
-      message:
-        'Are you sure you want to remove all AI-generated and user-added tags from all images in the current base folder?\n\nThis action cannot be undone.',
+      message: t('settings.confirm_all_tag_msg'),
       onConfirm: executeClearTags,
-      title: 'Confirm All Tag Deletion',
+      title: t('settings.confirm_all_tag_deletion'),
     });
   };
 
@@ -582,23 +610,21 @@ export default function SettingsPanel({
 
   const handleSetTransparent = (transparent: boolean) => {
     setConfirmModalState({
-      confirmText: 'Toggle Transparency',
+      confirmText: t('settings.toggle_transparency'),
       confirmVariant: 'primary',
       isOpen: true,
-      message: `Are you sure you want to ${transparent ? 'enable' : 'disable'} window transparency effects?\n${
-        transparent ? 'These effects may reduce application performance.' : ''
-      }\nThe application will relaunch to make this change.`,
+      message: transparent ? t('settings.transparency_enable_msg') : t('settings.transparency_disable_msg'),
       onConfirm: () => executeSetTransparent(transparent),
-      title: 'Confirm Window Transparency',
+      title: t('settings.confirm_transparency'),
     });
   };
 
   const executeClearCache = async () => {
     setIsClearingCache(true);
-    setCacheClearMessage('Clearing thumbnail cache...');
+    setCacheClearMessage(t('settings.clearing_cache_msg'));
     try {
       await invoke(Invokes.ClearThumbnailCache);
-      setCacheClearMessage('Thumbnail cache cleared successfully.');
+      setCacheClearMessage(t('settings.cache_cleared'));
       onLibraryRefresh();
     } catch (err: any) {
       console.error('Failed to clear thumbnail cache:', err);
@@ -613,13 +639,12 @@ export default function SettingsPanel({
 
   const handleClearCache = () => {
     setConfirmModalState({
-      confirmText: 'Clear Cache',
+      confirmText: t('settings.clear_button'),
       confirmVariant: 'destructive',
       isOpen: true,
-      message:
-        'Are you sure you want to clear the thumbnail cache?\n\nAll thumbnails will need to be regenerated, which may be slow for large folders.',
+      message: t('settings.confirm_cache_msg'),
       onConfirm: executeClearCache,
-      title: 'Confirm Cache Deletion',
+      title: t('settings.confirm_cache_deletion'),
     });
   };
 
@@ -627,12 +652,12 @@ export default function SettingsPanel({
     if (!aiConnectorAddress) {
       return;
     }
-    setTestStatus({ testing: true, message: 'Testing...', success: null });
+    setTestStatus({ testing: true, message: t('settings.testing'), success: null });
     try {
       await invoke(Invokes.TestAIConnectorConnection, { address: aiConnectorAddress });
-      setTestStatus({ testing: false, message: 'Connection successful!', success: true });
+      setTestStatus({ testing: false, message: t('settings.connection_success'), success: true });
     } catch (err) {
-      setTestStatus({ testing: false, message: `Connection failed.`, success: false });
+      setTestStatus({ testing: false, message: t('settings.connection_failed'), success: false });
       console.error('AI Connector connection test failed:', err);
     } finally {
       setTimeout(() => setTestStatus({ testing: false, message: '', success: null }), EXECUTE_TIMEOUT);
@@ -704,12 +729,12 @@ export default function SettingsPanel({
               onClick={onBack}
               size="icon"
               variant="ghost"
-              data-tooltip="Go to Home"
+              data-tooltip={t('tooltips.go_home')}
             >
               <ArrowLeft />
             </Button>
             <Text variant={TextVariants.display} color={TextColors.accent} className="whitespace-nowrap">
-              Settings
+              {t('settings.title')}
             </Text>
           </div>
 
@@ -757,10 +782,10 @@ export default function SettingsPanel({
               >
                 <div className="p-6 bg-surface rounded-xl shadow-md">
                   <Text variant={TextVariants.title} color={TextColors.accent} className="mb-8">
-                    General Settings
+                    {t('settings.general_settings')}
                   </Text>
                   <div className="space-y-8">
-                    <SettingItem label="Theme" description="Change the look and feel of the application.">
+                    <SettingItem label={t('settings.theme')} description={t('settings.theme_desc')}>
                       <Dropdown
                         onChange={(value: any) => onSettingsChange({ ...appSettings, theme: value })}
                         options={THEMES.map((theme: ThemeProps) => ({ value: theme.id, label: theme.name }))}
@@ -769,37 +794,37 @@ export default function SettingsPanel({
                     </SettingItem>
 
                     <SettingItem
-                      description="Dynamically changes editor colors based on the current image."
-                      label="Editor Theme"
+                      description={t('settings.adaptive_theme_desc')}
+                      label={t('settings.adaptive_theme')}
                     >
                       <Switch
                         checked={appSettings?.adaptiveEditorTheme ?? false}
                         id="adaptive-theme-toggle"
-                        label="Adaptive Editor Theme"
+                        label={t('settings.adaptive_theme')}
                         onChange={(checked) => onSettingsChange({ ...appSettings, adaptiveEditorTheme: checked })}
                       />
                     </SettingItem>
 
                     <SettingItem
-                      label="EXIF Library Sorting"
-                      description="Read EXIF data (ISO, aperture, etc.) on folder load at the cost of slower folder loading when using EXIF sorting."
+                      label={t('settings.exif_library_sorting')}
+                      description={t('settings.exif_reading_desc')}
                     >
                       <Switch
                         checked={appSettings?.enableExifReading ?? false}
                         id="exif-reading-toggle"
-                        label="EXIF Reading"
+                        label={t('settings.exif_reading')}
                         onChange={(checked) => onSettingsChange({ ...appSettings, enableExifReading: checked })}
                       />
                     </SettingItem>
 
                     <SettingItem
-                      label="XMP Metadata Sync"
-                      description="Sync ratings, color labels and tags to standard XMP sidecar files for compatibility with other photo editors."
+                      label={t('settings.xmp_sync')}
+                      description={t('settings.xmp_sync_desc')}
                     >
                       <Switch
                         checked={appSettings?.enableXmpSync ?? true}
                         id="enable-xmp-sync-toggle"
-                        label="Enable XMP Sync"
+                        label={t('settings.enable_xmp')}
                         onChange={(checked) => {
                           const newSettings = { ...appSettings, enableXmpSync: checked };
                           if (!checked) {
@@ -811,50 +836,61 @@ export default function SettingsPanel({
                     </SettingItem>
 
                     <SettingItem
-                      label="Create Missing XMP Files"
-                      description="Automatically create a new XMP sidecar file if one does not exist for an image. (Requires XMP Sync)"
+                      label={t('settings.create_xmp')}
+                      description={t('settings.create_xmp_desc')}
                     >
                       <Switch
                         disabled={!appSettings?.enableXmpSync}
                         checked={appSettings?.createXmpIfMissing ?? false}
                         id="create-xmp-missing-toggle"
-                        label="Create XMP if missing"
+                        label={t('settings.create_xmp_toggle')}
                         onChange={(checked) => onSettingsChange({ ...appSettings, createXmpIfMissing: checked })}
                       />
                     </SettingItem>
 
                     <SettingItem
-                      label="Folder Image Counts"
-                      description="Show the number of images inside folders when hovering over the folder tree."
+                      label={t('settings.folder_counts')}
+                      description={t('settings.folder_counts_desc')}
                     >
                       <Switch
                         checked={appSettings?.enableFolderImageCounts ?? false}
                         id="folder-image-counts-toggle"
-                        label="Show Image Counts"
+                        label={t('settings.show_counts')}
                         onChange={(checked) => onSettingsChange({ ...appSettings, enableFolderImageCounts: checked })}
                       />
                     </SettingItem>
 
                     <SettingItem
-                      description="Enables or disables transparency effects for the application window. Relaunch required."
-                      label="Window Effects"
+                      description={t('settings.transparency_desc')}
+                      label={t('settings.window_effects')}
                     >
                       <Switch
                         checked={appSettings?.transparent ?? true}
                         id="window-effects-toggle"
-                        label="Transparency"
+                        label={t('settings.transparency')}
                         onChange={handleSetTransparent}
                       />
                     </SettingItem>
 
-                    <SettingItem label="Font" description="Change the application font.">
+                    <SettingItem label={t('settings.font')} description={t('settings.font_desc')}>
                       <Dropdown
                         onChange={(value: any) => onSettingsChange({ ...appSettings, fontFamily: value })}
-                        options={[
-                          { value: 'poppins', label: 'Poppins' },
-                          { value: 'system', label: 'System Default' },
-                        ]}
+                        options={fontOptions}
                         value={appSettings?.fontFamily || 'poppins'}
+                      />
+                    </SettingItem>
+
+                    <SettingItem label={t('settings.language')} description={t('settings.language_desc')}>
+                      <Dropdown
+                        onChange={(value: any) => {
+                          i18n.changeLanguage(value);
+                          onSettingsChange({ ...appSettings, language: value });
+                        }}
+                        options={[
+                          { value: 'en', label: 'English' },
+                          { value: 'zh-CN', label: '简体中文' },
+                        ]}
+                        value={appSettings?.language || 'en'}
                       />
                     </SettingItem>
                   </div>
@@ -862,15 +898,14 @@ export default function SettingsPanel({
 
                 <div className="p-6 bg-surface rounded-xl shadow-md">
                   <Text variant={TextVariants.title} color={TextColors.accent} className="mb-8">
-                    Adjustments Visibility
+                    {t('settings.adj_visibility')}
                   </Text>
                   <Text className="mb-4">
-                    Hide adjustment sections you don't use often to simplify the editing panel. Your settings will be
-                    preserved and applied even when hidden.
+                    {t('settings.adj_visibility_desc')}
                   </Text>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <Switch
-                      label="Chromatic Aberration"
+                      label={t('settings.chromatic_aberration')}
                       checked={appSettings?.adjustmentVisibility?.chromaticAberration ?? false}
                       onChange={(checked) =>
                         onSettingsChange({
@@ -883,7 +918,7 @@ export default function SettingsPanel({
                       }
                     />
                     <Switch
-                      label="Grain"
+                      label={t('settings.grain')}
                       checked={appSettings?.adjustmentVisibility?.grain ?? true}
                       onChange={(checked) =>
                         onSettingsChange({
@@ -896,7 +931,7 @@ export default function SettingsPanel({
                       }
                     />
                     <Switch
-                      label="Color Calibration"
+                      label={t('settings.color_calibration')}
                       checked={appSettings?.adjustmentVisibility?.colorCalibration ?? true}
                       onChange={(checked) =>
                         onSettingsChange({
@@ -913,44 +948,44 @@ export default function SettingsPanel({
 
                 <div className="p-6 bg-surface rounded-xl shadow-md">
                   <Text variant={TextVariants.title} color={TextColors.accent} className="mb-8">
-                    My Lenses
+                    {t('settings.my_lenses')}
                   </Text>
                   <Text className="mb-6">
-                    Create a list of your frequently used lenses to quickly access them in the Lens Correction panel.
+                    {t('settings.my_lenses_desc')}
                   </Text>
 
                   <div className="space-y-8">
                     <div className="bg-bg-primary rounded-lg p-4 border border-border-color">
                       <Text variant={TextVariants.heading} className="mb-3">
-                        Add New Lens
+                        {t('settings.add_lens')}
                       </Text>
                       <div className="space-y-4">
                         <Dropdown
                           options={lensMakers.map((m) => ({ label: m, value: m }))}
                           value={tempLensMaker}
                           onChange={handleTempMakerChange}
-                          placeholder="Select Manufacturer"
+                          placeholder={t('settings.select_manufacturer')}
                         />
                         <Dropdown
                           options={lensModels.map((m) => ({ label: m, value: m }))}
                           value={tempLensModel}
                           onChange={setTempLensModel}
-                          placeholder="Select Lens Model"
+                          placeholder={t('settings.select_lens_model')}
                           disabled={!tempLensMaker}
                         />
                         <Button onClick={handleAddLens} disabled={!tempLensMaker || !tempLensModel} className="w-full">
                           <Plus size={16} className="mr-1" />
-                          Add to My Lenses
+                          {t('settings.add_to_lenses')}
                         </Button>
                       </div>
                     </div>
 
                     <div>
                       <Text variant={TextVariants.heading} className="mb-2">
-                        Saved Lenses
+                        {t('settings.saved_lenses')}
                       </Text>
                       {(!appSettings?.myLenses || appSettings.myLenses.length === 0) && (
-                        <Text className="italic">No lenses added yet.</Text>
+                        <Text className="italic">{t('settings.no_lenses')}</Text>
                       )}
                       <div className="divide-y divide-border-color">
                         {(appSettings?.myLenses || []).map((lens: MyLens, index: number) => (
@@ -972,7 +1007,7 @@ export default function SettingsPanel({
                             <button
                               onClick={() => handleRemoveLens(index)}
                               className="p-2 text-text-secondary hover:text-red-400 hover:bg-bg-primary rounded-md transition-colors"
-                              data-tooltip="Remove lens"
+                              data-tooltip={t('tooltips.remove_lens')}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -985,18 +1020,18 @@ export default function SettingsPanel({
 
                 <div className="p-6 bg-surface rounded-xl shadow-md">
                   <Text variant={TextVariants.title} color={TextColors.accent} className="mb-8">
-                    Tagging
+                    {t('settings.tagging')}
                   </Text>
                   <div className="space-y-8">
                     <div className="space-y-4">
                       <SettingItem
-                        description="Enables automatic image tagging using an AI (CLIP) model. This will download an additional model and impact performance while browsing folders. Tags are used for searching a folder."
-                        label="AI Tagging"
+                        description={t('settings.ai_tagging_desc')}
+                        label={t('settings.ai_tagging')}
                       >
                         <Switch
                           checked={appSettings?.enableAiTagging ?? false}
                           id="ai-tagging-toggle"
-                          label="Automatic AI Tagging"
+                          label={t('settings.auto_tagging')}
                           onChange={(checked) => onSettingsChange({ ...appSettings, enableAiTagging: checked })}
                         />
                       </SettingItem>
@@ -1012,11 +1047,11 @@ export default function SettingsPanel({
                           >
                             <div className="pl-4 border-l-2 border-border-color ml-1 space-y-8">
                               <SettingItem
-                                label="Maximum AI Tags"
-                                description="The maximum number of tags to generate per image."
+                                label={t('settings.max_tags')}
+                                description={t('settings.max_tags_desc')}
                               >
                                 <Slider
-                                  label="Amount"
+                                  label={t('settings.amount')}
                                   min={1}
                                   max={20}
                                   step={1}
@@ -1029,8 +1064,8 @@ export default function SettingsPanel({
                               </SettingItem>
 
                               <SettingItem
-                                label="Custom AI Tag List"
-                                description="If provided, the AI will ONLY use tags from this list, overriding RapidRAW’s built-in list. Tagging works only in English."
+                                label={t('settings.custom_tag_list')}
+                                description={t('settings.custom_tag_list_desc')}
                               >
                                 <div>
                                   <div className="flex flex-wrap gap-2 p-2 bg-bg-primary rounded-md min-h-10 border border-border-color mb-2 items-center">
@@ -1045,7 +1080,7 @@ export default function SettingsPanel({
                                             animate="visible"
                                             exit="exit"
                                             onClick={() => handleRemoveAiTag(tag)}
-                                            data-tooltip={`Remove tag "${tag}"`}
+                                            data-tooltip={t('settings.remove_ai_tag', { name: tag })}
                                             className="flex items-center gap-1 bg-surface px-2 py-1 rounded-sm group cursor-pointer"
                                           >
                                             <Text variant={TextVariants.label} color={TextColors.primary}>
@@ -1065,7 +1100,7 @@ export default function SettingsPanel({
                                           transition={{ duration: 0.2 }}
                                         >
                                           <Text className="px-1 select-none italic">
-                                            No custom AI tags (Using built-in list)
+                                            {t('settings.no_custom_tags')}
                                           </Text>
                                         </motion.span>
                                       )}
@@ -1078,13 +1113,13 @@ export default function SettingsPanel({
                                         value={newAiTag}
                                         onChange={(e) => setNewAiTag(e.target.value)}
                                         onKeyDown={handleAiTagInputKeyDown}
-                                        placeholder="Add custom AI tags (comma separated)..."
+                                        placeholder={t('settings.add_custom_tags')}
                                         className="pr-10"
                                       />
                                       <button
                                         onClick={handleAddAiTag}
                                         className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-text-secondary hover:text-text-primary hover:bg-surface"
-                                        data-tooltip="Add AI tag"
+                                        data-tooltip={t('tooltips.add_ai_tag')}
                                       >
                                         <Plus size={18} />
                                       </button>
@@ -1093,7 +1128,7 @@ export default function SettingsPanel({
                                       onClick={() => onSettingsChange({ ...appSettings, customAiTags: [] })}
                                       disabled={customAiTags.length === 0}
                                       className="p-2 text-text-secondary hover:text-red-400 hover:bg-surface rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-text-secondary disabled:hover:bg-transparent"
-                                      data-tooltip="Clear AI Tag List"
+                                      data-tooltip={t('tooltips.clear_ai_tags')}
                                     >
                                       <Trash2 size={18} />
                                     </button>
@@ -1107,8 +1142,8 @@ export default function SettingsPanel({
                     </div>
 
                     <SettingItem
-                      label="Tagging Shortcuts"
-                      description="A list of tags that will appear as shortcuts in the tagging context menu."
+                      label={t('settings.tagging_shortcuts')}
+                      description={t('settings.tagging_shortcuts_desc')}
                     >
                       <div>
                         <div className="flex flex-wrap gap-2 p-2 bg-bg-primary rounded-md min-h-10 border border-border-color mb-2 items-center">
@@ -1123,7 +1158,7 @@ export default function SettingsPanel({
                                   animate="visible"
                                   exit="exit"
                                   onClick={() => handleRemoveShortcut(shortcut)}
-                                  data-tooltip={`Remove shortcut "${shortcut}"`}
+                                  data-tooltip={t('settings.remove_shortcut', { name: shortcut })}
                                   className="flex items-center gap-1 bg-surface px-2 py-1 rounded-sm group cursor-pointer"
                                 >
                                   <Text variant={TextVariants.label} color={TextColors.primary}>
@@ -1143,7 +1178,7 @@ export default function SettingsPanel({
                                 transition={{ duration: 0.2 }}
                                 className="text-sm text-text-secondary italic px-1 select-none"
                               >
-                                No shortcuts added
+                                {t('settings.no_shortcuts')}
                               </motion.span>
                             )}
                           </AnimatePresence>
@@ -1155,13 +1190,13 @@ export default function SettingsPanel({
                               value={newShortcut}
                               onChange={(e) => setNewShortcut(e.target.value)}
                               onKeyDown={handleInputKeyDown}
-                              placeholder="Add shortcuts (comma separated)..."
+                              placeholder={t('settings.add_shortcuts')}
                               className="pr-10"
                             />
                             <button
                               onClick={handleAddShortcut}
                               className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-text-secondary hover:text-text-primary hover:bg-surface"
-                              data-tooltip="Add Shortcut"
+                              data-tooltip={t('tooltips.add_shortcut')}
                             >
                               <Plus size={18} />
                             </button>
@@ -1170,7 +1205,7 @@ export default function SettingsPanel({
                             onClick={() => onSettingsChange({ ...appSettings, taggingShortcuts: [] })}
                             disabled={taggingShortcuts.length === 0}
                             className="p-2 text-text-secondary hover:text-red-400 hover:bg-surface rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-text-secondary disabled:hover:bg-transparent"
-                            data-tooltip="Clear Shortcuts Tag List"
+                            data-tooltip={t('tooltips.clear_shortcuts')}
                           >
                             <Trash2 size={18} />
                           </button>
@@ -1182,23 +1217,23 @@ export default function SettingsPanel({
                       <div className="space-y-8">
                         <DataActionItem
                           buttonAction={handleClearAiTags}
-                          buttonText="Clear"
-                          description="This will remove all AI-generated tags from your .rrdata files in the current base folder. User-added tags will be kept."
+                          buttonText={t('settings.clear_button')}
+                          description={t('settings.clear_ai_tags_action_desc')}
                           disabled={!effectiveRootPath}
                           icon={<Trash2 size={16} className="mr-2" />}
                           isProcessing={isClearingAiTags}
                           message={aiTagsClearMessage}
-                          title="Clear AI Tags"
+                          title={t('settings.clear_ai_tags_confirm')}
                         />
                         <DataActionItem
                           buttonAction={handleClearTags}
-                          buttonText="Clear"
-                          description="This will remove all AI-generated and user-added tags from your .rrdata files in the current base folder. Color labels will be kept."
+                          buttonText={t('settings.clear_button')}
+                          description={t('settings.clear_all_tags_action_desc')}
                           disabled={!effectiveRootPath}
                           icon={<Trash2 size={16} className="mr-2" />}
                           isProcessing={isClearingTags}
                           message={tagsClearMessage}
-                          title="Clear All Tags"
+                          title={t('settings.clear_all_tags')}
                         />
                       </div>
                     </div>
@@ -1207,10 +1242,10 @@ export default function SettingsPanel({
 
                 <div className="p-6 bg-surface rounded-xl shadow-md">
                   <Text variant={TextVariants.title} color={TextColors.accent} className="mb-6">
-                    Special Thanks
+                    {t('settings.special_thanks')}
                   </Text>
                   <Text className="mb-4">
-                    A huge thank you to the following projects that were very important in the development of RapidRAW:
+                    {t('settings.special_thanks_intro')}
                   </Text>
                   <Text as="ul" className="space-y-3 list-disc ml-5 pl-1">
                     <li>
@@ -1222,8 +1257,7 @@ export default function SettingsPanel({
                       >
                         rawler
                       </a>
-                      : For the excellent Rust crate that provides the foundation for RAW file processing in this
-                      project.
+                      : {t('settings.special_thanks_rawler')}
                     </li>
                     <li>
                       <a
@@ -1234,7 +1268,7 @@ export default function SettingsPanel({
                       >
                         lensfun
                       </a>
-                      : For its invaluable open-source library and comprehensive database for automatic lens correction.
+                      : {t('settings.special_thanks_lensfun')}
                     </li>
                     <li>
                       <a
@@ -1245,7 +1279,7 @@ export default function SettingsPanel({
                       >
                         NegPy
                       </a>
-                      : For the inspiration behind the negative conversion logic.
+                      : {t('settings.special_thanks_negpy')}
                     </li>
                     <li>
                       <a
@@ -1256,8 +1290,7 @@ export default function SettingsPanel({
                       >
                         LaMa
                       </a>
-                      : For the powerful & simple image inpainting model, which enables content-aware fill and object
-                      removal.
+                      : {t('settings.special_thanks_lama')}
                     </li>
                     <li>
                       <a
@@ -1268,7 +1301,7 @@ export default function SettingsPanel({
                       >
                         SAM 2
                       </a>
-                      : For providing the foundation model used for the AI subject detection capabilities.
+                      : {t('settings.special_thanks_sam2')}
                     </li>
                     <li>
                       <a
@@ -1279,7 +1312,7 @@ export default function SettingsPanel({
                       >
                         U-2-Net
                       </a>
-                      : For providing the robust architecture used for the AI sky and foreground detection capabilities.
+                      : {t('settings.special_thanks_u2net')}
                     </li>
                     <li>
                       <a
@@ -1290,8 +1323,7 @@ export default function SettingsPanel({
                       >
                         Depth Anything V2
                       </a>
-                      : For the powerful monocular depth estimation model that enables the AI depth masking
-                      capabilities.
+                      : {t('settings.special_thanks_depth')}
                     </li>
                     <li>
                       <a
@@ -1302,7 +1334,7 @@ export default function SettingsPanel({
                       >
                         nind-denoise
                       </a>
-                      : For providing AI models that power the AI noise reduction capabilities in RapidRAW.
+                      : {t('settings.special_thanks_nind')}
                     </li>
                     <li>
                       <a
@@ -1313,11 +1345,10 @@ export default function SettingsPanel({
                       >
                         darktable & co.
                       </a>
-                      : For some reference implementations that guided parts of this work.
+                      : {t('settings.special_thanks_darktable')}
                     </li>
                     <li>
-                      <span className="font-semibold text-accent">You</span>: For using and supporting RapidRAW. Your
-                      interest keeps this project alive and evolving.
+                      <span className="font-semibold text-accent">{t('settings.special_thanks_you')}</span>: {t('settings.special_thanks_you_desc')}
                     </li>
                   </Text>
                 </div>
@@ -1335,16 +1366,17 @@ export default function SettingsPanel({
               >
                 <div className="p-6 bg-surface rounded-xl shadow-md">
                   <Text variant={TextVariants.title} color={TextColors.accent} className="mb-8">
-                    Processing Engine
+                    {t('settings.processing_engine')}
                   </Text>
                   <div className="space-y-8">
                     <div>
                       <Text variant={TextVariants.heading} className="mb-2">
-                        Preview Rendering Strategy
+                        {t('settings.preview_strategy')}
                       </Text>
                       <PreviewModeSwitch
                         mode={appSettings?.enableZoomHifi ? 'dynamic' : 'static'}
                         onModeChange={handlePreviewModeChange}
+                        modes={previewModes}
                       />
 
                       <div className="mt-3">
@@ -1358,14 +1390,12 @@ export default function SettingsPanel({
                               transition={{ duration: 0.2 }}
                             >
                               <Text variant={TextVariants.small} className="mb-4">
-                                The editor renders the image at a fixed resolution. This mode is the fastest and most
-                                consistent, making it ideal for lower-end hardware where smooth performance is
-                                prioritized over pixel-perfect zoom.
+                                {t('settings.static_preview_desc')}
                               </Text>
                               <div className="pl-4 border-l-2 border-border-color ml-1">
                                 <SettingItem
-                                  description="Determines the maximum resolution of the preview. Lower values significantly improve performance."
-                                  label="Preview Resolution"
+                                  description={t('settings.preview_resolution_desc')}
+                                  label={t('settings.preview_resolution')}
                                 >
                                   <Dropdown
                                     onChange={(value: any) =>
@@ -1386,14 +1416,12 @@ export default function SettingsPanel({
                               transition={{ duration: 0.2 }}
                             >
                               <Text variant={TextVariants.small} className="mb-4">
-                                The editor renders the preview to match your display's actual pixel density. This
-                                ensures that every detail is represented with 1:1 pixel accuracy, providing maximum
-                                clarity when zooming and checking focus.
+                                {t('settings.dynamic_preview_desc')}
                               </Text>
                               <div className="pl-4 border-l-2 border-border-color ml-1 space-y-3">
                                 <SettingItem
-                                  description="Sets the resolution for static previews like crop mode, lens correction, and perspective tools. Does not affect the main editor preview."
-                                  label="Static Preview Resolution"
+                                  description={t('settings.static_preview_resolution_desc')}
+                                  label={t('settings.static_preview_resolution')}
                                 >
                                   <Dropdown
                                     onChange={(value: any) =>
@@ -1405,8 +1433,8 @@ export default function SettingsPanel({
                                 </SettingItem>
 
                                 <SettingItem
-                                  label="Render Resolution Scale"
-                                  description="Scales the render resolution relative to your display. Lower values improve performance on high-resolution screens at the cost of some sharpness."
+                                  label={t('settings.render_scale')}
+                                  description={t('settings.render_scale_desc')}
                                 >
                                   <Dropdown
                                     onChange={(value: any) =>
@@ -1418,18 +1446,18 @@ export default function SettingsPanel({
                                 </SettingItem>
 
                                 <SettingItem
-                                  label="High-DPI Rendering"
+                                  label={t('settings.high_dpi')}
                                   description={
                                     dpr > 1
-                                      ? `Render previews at your screen's native ${dpr}x physical pixel resolution. Produces the sharpest possible preview but uses significantly more memory.`
-                                      : 'This setting only affects high-DPI displays. Your current display is standard resolution.'
+                                      ? t('settings.high_dpi_desc', { dpr })
+                                      : t('settings.high_dpi_standard_desc')
                                   }
                                 >
                                   <Switch
                                     checked={processingSettings.useFullDpiRendering}
                                     disabled={dpr <= 1}
                                     id="full-dpi-rendering-toggle"
-                                    label="Render at native DPI"
+                                    label={t('settings.render_native_dpi')}
                                     onChange={(checked) =>
                                       handleProcessingSettingChange('useFullDpiRendering', checked)
                                     }
@@ -1444,13 +1472,13 @@ export default function SettingsPanel({
 
                     <div className="space-y-4">
                       <SettingItem
-                        label="Live Interactive Previews"
-                        description="Update the preview immediately while dragging sliders. Disable this if the interface feels laggy during adjustments."
+                        label={t('settings.live_previews')}
+                        description={t('settings.live_previews_desc')}
                       >
                         <Switch
                           checked={appSettings?.enableLivePreviews ?? true}
                           id="live-previews-toggle"
-                          label="Enable Live Previews"
+                          label={t('settings.enable_live_previews')}
                           onChange={(checked) => {
                             setHasInteractedWithLivePreview(true);
                             onSettingsChange({ ...appSettings, enableLivePreviews: checked });
@@ -1468,8 +1496,8 @@ export default function SettingsPanel({
                           >
                             <div className="pl-4 border-l-2 border-border-color ml-1">
                               <SettingItem
-                                label="Live Preview Quality"
-                                description="Controls the resolution and compression of the image while dragging sliders. Lower quality significantly improves responsiveness."
+                                label={t('settings.live_preview_quality')}
+                                description={t('settings.live_preview_quality_desc')}
                               >
                                 <Dropdown
                                   onChange={(value: any) =>
@@ -1486,8 +1514,8 @@ export default function SettingsPanel({
                     </div>
 
                     <SettingItem
-                      description="Determines the resolution of generated library thumbnails. Higher values produce sharper images during loading."
-                      label="Thumbnail Resolution"
+                      description={t('settings.thumbnail_resolution_desc')}
+                      label={t('settings.thumbnail_resolution')}
                     >
                       <Dropdown
                         onChange={(value: any) => handleProcessingSettingChange('thumbnailResolution', value)}
@@ -1497,11 +1525,11 @@ export default function SettingsPanel({
                     </SettingItem>
 
                     <SettingItem
-                      label="RAW Highlight Recovery"
-                      description="Controls how much detail is recovered from clipped highlights in RAW files. Higher values recover more detail but can introduce purple artefacts."
+                      label={t('settings.highlight_recovery')}
+                      description={t('settings.highlight_recovery_desc')}
                     >
                       <Slider
-                        label="Amount"
+                        label={t('settings.amount')}
                         min={1}
                         max={10}
                         step={0.1}
@@ -1515,8 +1543,8 @@ export default function SettingsPanel({
                     </SettingItem>
 
                     <SettingItem
-                      label="Linear RAW Processing"
-                      description="Fixes color casts or pink tint in some DNG files. Controls how already processed LinearRAW data is interpreted."
+                      label={t('settings.linear_raw')}
+                      description={t('settings.linear_raw_desc')}
                     >
                       <Dropdown
                         onChange={(value: any) => onSettingsChange({ ...appSettings, linearRawMode: value })}
@@ -1526,8 +1554,8 @@ export default function SettingsPanel({
                     </SettingItem>
 
                     <SettingItem
-                      label="Processing Backend"
-                      description="Select the graphics API. 'Auto' is recommended. May fix crashes on some systems."
+                      label={t('settings.processing_backend')}
+                      description={t('settings.processing_backend_desc')}
                     >
                       <Dropdown
                         onChange={(value: any) => handleProcessingSettingChange('processingBackend', value)}
@@ -1542,13 +1570,13 @@ export default function SettingsPanel({
 
                     {osPlatform !== 'macos' && osPlatform !== 'windows' && (
                       <SettingItem
-                        label="Linux Compatibility Mode"
-                        description="Enable workarounds for common GPU driver and display server issues. Disable this to enable full GPU acceleration."
+                        label={t('settings.linux_compat')}
+                        description={t('settings.linux_compat_desc')}
                       >
                         <Switch
                           checked={processingSettings.linuxGpuOptimization}
                           id="gpu-compat-toggle"
-                          label="Enable Compatibility Mode"
+                          label={t('settings.enable_compat')}
                           onChange={(checked) => handleProcessingSettingChange('linuxGpuOptimization', checked)}
                         />
                       </SettingItem>
@@ -1562,10 +1590,10 @@ export default function SettingsPanel({
                           className="p-3 bg-blue-900/10 border border-blue-500/50 rounded-lg flex items-center gap-3"
                         >
                           <Info size={18} />
-                          <p>Changes to the processing engine require an application restart to take effect.</p>
+                          <p>{t('settings.restart_notice')}</p>
                         </Text>
                         <div className="flex justify-end">
-                          <Button onClick={handleSaveAndRelaunch}>Save & Relaunch</Button>
+                          <Button onClick={handleSaveAndRelaunch}>{t('settings.save_relaunch')}</Button>
                         </div>
                       </>
                     )}
@@ -1574,14 +1602,13 @@ export default function SettingsPanel({
 
                 <div className="p-6 bg-surface rounded-xl shadow-md">
                   <Text variant={TextVariants.title} color={TextColors.accent} className="mb-8">
-                    Generative AI
+                    {t('settings.generative_ai')}
                   </Text>
                   <Text className="mb-4">
-                    RapidRAW's AI is built for flexibility. Choose your ideal workflow, from fast local tools to
-                    powerful self-hosting.
+                    {t('settings.ai_flexibility_desc')}
                   </Text>
 
-                  <AiProviderSwitch selectedProvider={aiProvider} onProviderChange={handleProviderChange} />
+                  <AiProviderSwitch selectedProvider={aiProvider} onProviderChange={handleProviderChange} providers={aiProviders} />
 
                   <div className="mt-8">
                     <AnimatePresence mode="wait">
@@ -1593,15 +1620,14 @@ export default function SettingsPanel({
                           exit={{ opacity: 0, x: -10 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <Text variant={TextVariants.heading}>Built-in AI (CPU)</Text>
+                          <Text variant={TextVariants.heading}>{t('settings.builtin_ai')}</Text>
                           <Text className="mt-1">
-                            Integrated directly into RapidRAW, these features run entirely on your computer. They are
-                            fast, free, and require no setup, making them ideal for everyday workflow acceleration.
+                            {t('settings.builtin_ai_desc')}
                           </Text>
                           <Text as="ul" className="mt-3 space-y-1 list-disc list-inside">
-                            <li>AI Masking (Subject, Sky, Foreground)</li>
-                            <li>Automatic Image Tagging</li>
-                            <li>Simple CPU-based Generative Replace</li>
+                            <li>{t('settings.builtin_ai_feature_1')}</li>
+                            <li>{t('settings.builtin_ai_feature_2')}</li>
+                            <li>{t('settings.builtin_ai_feature_3')}</li>
                           </Text>
                         </motion.div>
                       )}
@@ -1616,20 +1642,19 @@ export default function SettingsPanel({
                         >
                           <div className="space-y-8">
                             <div>
-                              <Text variant={TextVariants.heading}>Self-Hosted (RapidRAW AI Connector)</Text>
+                              <Text variant={TextVariants.heading}>{t('settings.self_hosted')}</Text>
                               <Text className="mt-1">
-                                For users with a capable GPU who want maximum control, connect RapidRAW to your own
-                                Connector server. This gives you full control for technical workflows.
+                                {t('settings.self_hosted_desc')}
                               </Text>
                               <Text as="ul" className="mt-3 space-y-1 list-disc list-inside">
-                                <li>Use your own ComfyUI instance</li>
-                                <li>Cost-free advanced generative edits</li>
-                                <li>Custom workflow selection</li>
+                                <li>{t('settings.self_hosted_feature_1')}</li>
+                                <li>{t('settings.self_hosted_feature_2')}</li>
+                                <li>{t('settings.self_hosted_feature_3')}</li>
                               </Text>
                             </div>
                             <SettingItem
-                              label="AI Connector Address"
-                              description="Enter the address and port of your running AI Connector instance. Required for generative AI features."
+                              label={t('settings.ai_connector_address')}
+                              description={t('settings.ai_connector_address_desc')}
                             >
                               <div className="flex items-center gap-2">
                                 <Input
@@ -1649,7 +1674,7 @@ export default function SettingsPanel({
                                   disabled={testStatus.testing || !aiConnectorAddress}
                                   onClick={handleTestConnection}
                                 >
-                                  {testStatus.testing ? 'Testing...' : 'Test'}
+                                  {testStatus.testing ? t('settings.testing') : t('settings.test')}
                                 </Button>
                               </div>
                               {testStatus.message && (
@@ -1675,16 +1700,14 @@ export default function SettingsPanel({
                           exit={{ opacity: 0, x: -10 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <Text variant={TextVariants.heading}>Cloud Service</Text>
+                          <Text variant={TextVariants.heading}>{t('settings.cloud_service')}</Text>
                           <Text className="mt-1">
-                            For those who want a simpler solution, an optional subscription provides the same
-                            high-quality results as self-hosting without any hassle. This is the most convenient option
-                            and the best way to support the project.
+                            {t('settings.cloud_service_desc')}
                           </Text>
                           <Text as="ul" className="mt-3 space-y-1 list-disc list-inside">
-                            <li>Maximum convenience, no setup</li>
-                            <li>Same results as self-hosting</li>
-                            <li>No powerful hardware required</li>
+                            <li>{t('settings.cloud_service_feature_1')}</li>
+                            <li>{t('settings.cloud_service_feature_2')}</li>
+                            <li>{t('settings.cloud_service_feature_3')}</li>
                           </Text>
 
                           <div className="mt-8 p-4 bg-bg-primary rounded-lg border border-border-color text-center space-y-3">
@@ -1694,10 +1717,10 @@ export default function SettingsPanel({
                               weight={TextWeights.semibold}
                               className="inline-block bg-accent px-2 py-1 rounded-full"
                             >
-                              Coming Soon
+                              {t('settings.coming_soon')}
                             </Text>
                             <Text>
-                              Keep an eye on the GitHub page to be notified when the cloud service is available.
+                              {t('settings.cloud_service_github')}
                             </Text>
                           </div>
                         </motion.div>
@@ -1708,19 +1731,17 @@ export default function SettingsPanel({
 
                 <div className="p-6 bg-surface rounded-xl shadow-md">
                   <Text variant={TextVariants.title} color={TextColors.accent} className="mb-8">
-                    Data Management
+                    {t('settings.data_management')}
                   </Text>
                   <div className="space-y-8">
                     <DataActionItem
                       buttonAction={handleClearSidecars}
-                      buttonText="Clear"
+                      buttonText={t('settings.clear_button')}
                       description={
                         <Text as="span" variant={TextVariants.small}>
-                          This will delete all{' '}
-                          <code className="bg-bg-primary px-1 rounded-sm text-text-primary">.rrdata</code> files
-                          (containing your edits) within the current base folder:
+                          {t('settings.clear_sidecar_action_desc')}
                           <span className="block font-mono bg-bg-primary p-2 rounded-sm mt-2 break-all border border-border-color">
-                            {effectiveRootPath || 'No folder selected'}
+                            {effectiveRootPath || t('settings.no_folder')}
                           </span>
                         </Text>
                       }
@@ -1728,17 +1749,17 @@ export default function SettingsPanel({
                       icon={<Trash2 size={16} className="mr-2" />}
                       isProcessing={isClearing}
                       message={clearMessage}
-                      title="Clear All Sidecar Files"
+                      title={t('settings.clear_sidecar')}
                     />
 
                     <DataActionItem
                       buttonAction={handleClearCache}
-                      buttonText="Clear"
-                      description="This will delete all cached thumbnail images. They will be regenerated automatically as you browse your library."
+                      buttonText={t('settings.clear_button')}
+                      description={t('settings.clear_cache_action_desc')}
                       icon={<Trash2 size={16} className="mr-2" />}
                       isProcessing={isClearingCache}
                       message={cacheClearMessage}
-                      title="Clear Thumbnail Cache"
+                      title={t('settings.clear_cache')}
                     />
 
                     <DataActionItem
@@ -1747,12 +1768,12 @@ export default function SettingsPanel({
                           await invoke(Invokes.ShowInFinder, { path: logPath });
                         }
                       }}
-                      buttonText="Open"
+                      buttonText={t('settings.open')}
                       description={
                         <Text as="span" variant={TextVariants.small}>
-                          View the application's log file for troubleshooting. The log is located at:
+                          {t('settings.view_logs_desc')}
                           <span className="block font-mono bg-bg-primary p-2 rounded-sm mt-2 break-all border border-border-color">
-                            {logPath || 'Loading...'}
+                            {logPath || t('settings.loading')}
                           </span>
                         </Text>
                       }
@@ -1760,7 +1781,7 @@ export default function SettingsPanel({
                       icon={<ExternalLinkIcon size={16} className="mr-2" />}
                       isProcessing={false}
                       message=""
-                      title="View Application Logs"
+                      title={t('settings.view_logs')}
                     />
                   </div>
                 </div>
@@ -1778,68 +1799,68 @@ export default function SettingsPanel({
               >
                 <div className="p-6 bg-surface rounded-xl shadow-md">
                   <Text variant={TextVariants.title} color={TextColors.accent} className="mb-8">
-                    Keyboard Shortcuts
+                    {t('settings.keyboard_shortcuts')}
                   </Text>
                   <div className="space-y-8">
                     <div>
-                      <Text variant={TextVariants.heading}>General</Text>
+                      <Text variant={TextVariants.heading}>{t('settings.keybind_general')}</Text>
                       <div className="divide-y divide-border-color">
-                        <KeybindItem keys={['Space', 'Enter']} description="Open selected image" />
-                        <KeybindItem keys={['Ctrl/Cmd', '+', 'C']} description="Copy selected adjustments" />
-                        <KeybindItem keys={['Ctrl/Cmd', '+', 'V']} description="Paste copied adjustments" />
-                        <KeybindItem keys={['Ctrl/Cmd', '+', 'Shift', '+', 'C']} description="Copy selected file(s)" />
+                        <KeybindItem keys={['Space', 'Enter']} description={t('settings.keybind_open_image')} />
+                        <KeybindItem keys={['Ctrl/Cmd', '+', 'C']} description={t('settings.keybind_copy_adj')} />
+                        <KeybindItem keys={['Ctrl/Cmd', '+', 'V']} description={t('settings.keybind_paste_adj')} />
+                        <KeybindItem keys={['Ctrl/Cmd', '+', 'Shift', '+', 'C']} description={t('settings.keybind_copy_files')} />
                         <KeybindItem
-                          description="Paste file(s) to current folder"
+                          description={t('settings.keybind_paste_files')}
                           keys={['Ctrl/Cmd', '+', 'Shift', '+', 'V']}
                         />
-                        <KeybindItem keys={['Ctrl/Cmd', '+', 'A']} description="Select all images" />
+                        <KeybindItem keys={['Ctrl/Cmd', '+', 'A']} description={t('settings.keybind_select_all')} />
                         <KeybindItem
                           keys={osPlatform === 'macos' ? ['Cmd', '+', 'Delete'] : ['Delete']}
-                          description="Delete selected file(s)"
+                          description={t('settings.keybind_delete_files')}
                         />
-                        <KeybindItem keys={['0-5']} description="Set star rating for selected image(s)" />
-                        <KeybindItem keys={['Shift', '+', '0-5']} description="Set color label for selected image(s)" />
-                        <KeybindItem keys={['↑', '↓', '←', '→']} description="Navigate images in library" />
+                        <KeybindItem keys={['0-5']} description={t('settings.keybind_star_rating')} />
+                        <KeybindItem keys={['Shift', '+', '0-5']} description={t('settings.keybind_color_label')} />
+                        <KeybindItem keys={['↑', '↓', '←', '→']} description={t('settings.keybind_navigate')} />
                       </div>
                     </div>
                     <div>
-                      <Text variant={TextVariants.heading}>Editor</Text>
+                      <Text variant={TextVariants.heading}>{t('settings.keybind_editor')}</Text>
                       <div className="divide-y divide-border-color">
-                        <KeybindItem keys={['Esc']} description="Deselect mask, exit crop/fullscreen/editor" />
-                        <KeybindItem keys={['Ctrl/Cmd', '+', 'Z']} description="Undo adjustment" />
-                        <KeybindItem keys={['Ctrl/Cmd', '+', 'Y']} description="Redo adjustment" />
+                        <KeybindItem keys={['Esc']} description={t('settings.keybind_deselect')} />
+                        <KeybindItem keys={['Ctrl/Cmd', '+', 'Z']} description={t('settings.keybind_undo')} />
+                        <KeybindItem keys={['Ctrl/Cmd', '+', 'Y']} description={t('settings.keybind_redo')} />
                         <KeybindItem
                           keys={osPlatform === 'macos' ? ['Cmd', '+', 'Delete'] : ['Delete']}
-                          description="Delete selected mask/patch or image"
+                          description={t('settings.keybind_delete_mask')}
                         />
-                        <KeybindItem keys={['Space']} description="Cycle zoom (Fit, 2x Fit, 100%)" />
-                        <KeybindItem keys={['←', '→']} description="Previous / Next image" />
-                        <KeybindItem keys={['↑', '↓']} description="Zoom in / Zoom out (by step)" />
+                        <KeybindItem keys={['Space']} description={t('settings.keybind_cycle_zoom')} />
+                        <KeybindItem keys={['←', '→']} description={t('settings.keybind_prev_next')} />
+                        <KeybindItem keys={['↑', '↓']} description={t('settings.keybind_zoom_step')} />
                         <KeybindItem
                           keys={['Shift/Alt', '+', 'Drag Slider']}
-                          description="Fine adjustment mode (0.2× sensitivity)"
+                          description={t('settings.keybind_fine_adj')}
                         />
                         <KeybindItem
                           keys={['Shift', '+', 'Mouse Wheel']}
-                          description="Adjust slider value by 2 steps"
+                          description={t('settings.keybind_slider_step')}
                         />
-                        <KeybindItem keys={['Ctrl/Cmd', '+', '+']} description="Zoom in" />
-                        <KeybindItem keys={['Ctrl/Cmd', '+', '-']} description="Zoom out" />
-                        <KeybindItem keys={['Ctrl/Cmd', '+', '0']} description="Zoom to fit" />
-                        <KeybindItem keys={['Ctrl/Cmd', '+', '1']} description="Zoom to 100%" />
-                        <KeybindItem keys={['[']} description="Rotate 90° counter-clockwise" />
-                        <KeybindItem keys={[']']} description="Rotate 90° clockwise" />
-                        <KeybindItem keys={['F']} description="Toggle fullscreen" />
-                        <KeybindItem keys={['B']} description="Show original (before/after)" />
-                        <KeybindItem keys={['S']} description="Straighten Image" />
-                        <KeybindItem keys={['D']} description="Toggle Adjustments panel" />
-                        <KeybindItem keys={['R']} description="Toggle Crop panel" />
-                        <KeybindItem keys={['M']} description="Toggle Masks panel" />
-                        <KeybindItem keys={['K']} description="Toggle AI panel" />
-                        <KeybindItem keys={['P']} description="Toggle Presets panel" />
-                        <KeybindItem keys={['I']} description="Toggle Metadata panel" />
-                        <KeybindItem keys={['A']} description="Toggle Analytics display" />
-                        <KeybindItem keys={['E']} description="Toggle Export panel" />
+                        <KeybindItem keys={['Ctrl/Cmd', '+', '+']} description={t('settings.keybind_zoom_in')} />
+                        <KeybindItem keys={['Ctrl/Cmd', '+', '-']} description={t('settings.keybind_zoom_out')} />
+                        <KeybindItem keys={['Ctrl/Cmd', '+', '0']} description={t('settings.keybind_zoom_fit')} />
+                        <KeybindItem keys={['Ctrl/Cmd', '+', '1']} description={t('settings.keybind_zoom_100')} />
+                        <KeybindItem keys={['[']} description={t('settings.keybind_rotate_ccw')} />
+                        <KeybindItem keys={[']']} description={t('settings.keybind_rotate_cw')} />
+                        <KeybindItem keys={['F']} description={t('settings.keybind_fullscreen')} />
+                        <KeybindItem keys={['B']} description={t('settings.keybind_before_after')} />
+                        <KeybindItem keys={['S']} description={t('settings.keybind_straighten')} />
+                        <KeybindItem keys={['D']} description={t('settings.keybind_toggle_adj')} />
+                        <KeybindItem keys={['R']} description={t('settings.keybind_toggle_crop')} />
+                        <KeybindItem keys={['M']} description={t('settings.keybind_toggle_masks')} />
+                        <KeybindItem keys={['K']} description={t('settings.keybind_toggle_ai')} />
+                        <KeybindItem keys={['P']} description={t('settings.keybind_toggle_presets')} />
+                        <KeybindItem keys={['I']} description={t('settings.keybind_toggle_meta')} />
+                        <KeybindItem keys={['A']} description={t('settings.keybind_toggle_analytics')} />
+                        <KeybindItem keys={['E']} description={t('settings.keybind_toggle_export')} />
                       </div>
                     </div>
                   </div>

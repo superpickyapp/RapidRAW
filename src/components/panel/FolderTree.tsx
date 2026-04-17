@@ -2,6 +2,7 @@ import { Folder, FolderOpen, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, 
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Text from '../ui/Text';
 import { TEXT_COLOR_KEYS, TextColors, TextVariants, TextWeights } from '../../types/typography';
 
@@ -83,6 +84,7 @@ const getAutoExpandedPaths = (node: FolderTree, paths: Set<string>) => {
 };
 
 function SectionHeader({ title, isOpen, onToggle }: { title: string; isOpen: boolean; onToggle: () => void }) {
+  const { t } = useTranslation();
   return (
     <Text
       as="div"
@@ -90,7 +92,7 @@ function SectionHeader({ title, isOpen, onToggle }: { title: string; isOpen: boo
       weight={TextWeights.bold}
       className="flex items-center w-full px-1 py-1.5 cursor-pointer group"
       onClick={onToggle}
-      data-tooltip={isOpen ? `Collapse ${title}` : `Expand ${title}`}
+      data-tooltip={isOpen ? t('app.folder_collapse_section', { section: title }) : t('app.folder_expand_section', { section: title })}
     >
       <div className="p-0.5 rounded-md transition-colors">
         {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -265,6 +267,7 @@ export default function FolderTree({
   showImageCounts,
   isInstantTransition,
 }: FolderTreeProps) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [isHovering, setIsHovering] = useState(false);
 
@@ -339,7 +342,7 @@ export default function FolderTree({
         <button
           className="absolute top-1/2 -translate-y-1/2 right-1 w-6 h-10 hover:bg-card-active rounded-md flex items-center justify-center z-30"
           onClick={() => setIsVisible(true)}
-          data-tooltip="Expand"
+          data-tooltip={t('app.folder_expand')}
         >
           <ChevronRight size={16} />
         </button>
@@ -358,7 +361,7 @@ export default function FolderTree({
                     transition={{ duration: 0.2, ease: 'easeInOut' }}
                     className="bg-surface rounded-md hover:bg-card-active flex items-center justify-center shrink-0 overflow-hidden transition-colors"
                     onClick={() => setIsVisible(false)}
-                    data-tooltip="Collapse"
+                    data-tooltip={t('app.folder_collapse')}
                   >
                     <ChevronLeft size={17.5} className="text-text-secondary shrink-0" />
                   </motion.button>
@@ -368,7 +371,7 @@ export default function FolderTree({
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
                 <input
                   type="text"
-                  placeholder="Search folders..."
+                  placeholder={t('app.folder_search_placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-surface border border-transparent rounded-md pl-9 pr-8 py-2 text-sm focus:outline-hidden"
@@ -377,7 +380,7 @@ export default function FolderTree({
                   <button
                     onClick={() => setSearchQuery('')}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-card-active"
-                    data-tooltip="Clear search"
+                    data-tooltip={t('app.folder_clear_search')}
                   >
                     <X size={16} className="text-text-secondary" />
                   </button>
@@ -391,7 +394,7 @@ export default function FolderTree({
               <>
                 <div>
                   <SectionHeader
-                    title="Pinned"
+                    title={t('app.folder_pinned')}
                     isOpen={isPinnedOpen}
                     onToggle={() => onActiveSectionChange(isPinnedOpen ? null : 'pinned')}
                   />
@@ -432,7 +435,7 @@ export default function FolderTree({
               <>
                 <div>
                   <SectionHeader
-                    title="Base Folder"
+                    title={t('app.folder_base')}
                     isOpen={isCurrentOpen}
                     onToggle={() => onActiveSectionChange(isCurrentOpen ? null : 'current')}
                   />

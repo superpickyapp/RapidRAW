@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { CheckCircle, XCircle, Loader2, Users, Trash2, Star, Tag } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { CullingSettings, CullingSuggestions, Invokes, Progress } from '../ui/AppProperties';
 import Button from '../ui/Button';
 import Switch from '../ui/Switch';
@@ -24,14 +25,14 @@ interface CullingModalProps {
 
 type CullAction = 'reject' | 'rate_zero' | 'delete';
 
-const CULL_ACTIONS: {
+const CULL_ACTIONS_BASE: {
   value: CullAction;
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
 }[] = [
-  { value: 'reject', label: 'Mark as Rejected (Red Label)', icon: <Tag size={16} className="text-red-500" /> },
-  { value: 'rate_zero', label: 'Set Rating to 1 Stars', icon: <Star size={16} /> },
-  { value: 'delete', label: 'Move to Trash', icon: <Trash2 size={16} /> },
+  { value: 'reject', labelKey: 'modals.cull_reject', icon: <Tag size={16} className="text-red-500" /> },
+  { value: 'rate_zero', labelKey: 'modals.cull_rate_one', icon: <Star size={16} /> },
+  { value: 'delete', labelKey: 'modals.cull_delete', icon: <Trash2 size={16} /> },
 ];
 
 function ImageThumbnail({ path, thumbnails, isSelected, onToggle, children }: any) {
@@ -79,6 +80,8 @@ export default function CullingModal({
   onApply,
   onError,
 }: CullingModalProps) {
+  const { t } = useTranslation();
+  const CULL_ACTIONS = CULL_ACTIONS_BASE.map((a) => ({ value: a.value, label: t(a.labelKey), icon: a.icon }));
   const [isMounted, setIsMounted] = useState(false);
   const [show, setShow] = useState(false);
   const [stage, setStage] = useState<'settings' | 'progress' | 'results'>('settings');
@@ -165,19 +168,19 @@ export default function CullingModal({
         <Users className="w-12 h-12 text-accent" />
       </div>
       <Text variant={TextVariants.title} className="mb-6 text-center">
-        Cull Images
+        {t('modals.cull_title')}
       </Text>
       <div className="space-y-6 text-sm">
         <div>
           <Switch
-            label="Group Similar Images"
+            label={t('modals.cull_group_similar')}
             checked={settings.groupSimilar}
             onChange={(v) => setSettings((s) => ({ ...s, groupSimilar: v }))}
           />
           {settings.groupSimilar && (
             <div className="mt-2 pl-4 border-l-2 border-border-color ml-1">
               <Slider
-                label="Similarity Threshold"
+                label={t('modals.cull_similarity_threshold')}
                 min={1}
                 max={64}
                 step={1}
@@ -187,22 +190,21 @@ export default function CullingModal({
                 fillOrigin="min"
               />
               <Text variant={TextVariants.small} className="mt-1">
-                Lower is stricter (exact duplicates). Higher is looser (near duplicates). A value of 24-32 is
-                recommended.
+                {t('modals.cull_similarity_lower')}
               </Text>
             </div>
           )}
         </div>
         <div>
           <Switch
-            label="Filter Blurry Images"
+            label={t('modals.cull_filter_blurry')}
             checked={settings.filterBlurry}
             onChange={(v) => setSettings((s) => ({ ...s, filterBlurry: v }))}
           />
           {settings.filterBlurry && (
             <div className="mt-2  pl-4 border-l-2 border-border-color ml-1">
               <Slider
-                label="Blur Threshold"
+                label={t('modals.cull_blur_threshold')}
                 min={25}
                 max={500}
                 step={25}
@@ -212,7 +214,7 @@ export default function CullingModal({
                 fillOrigin="min"
               />
               <Text variant={TextVariants.small} className="mt-1">
-                Images with a sharpness score below this value are flagged. Higher is stricter.
+                {t('modals.cull_blur_lower')}
               </Text>
             </div>
           )}
@@ -223,9 +225,9 @@ export default function CullingModal({
           className="px-4 py-2 rounded-md text-text-secondary hover:bg-surface transition-colors"
           onClick={onClose}
         >
-          Cancel
+          {t('modals.cull_cancel')}
         </button>
-        <Button onClick={handleStartCulling}>Start Culling</Button>
+        <Button onClick={handleStartCulling}>{t('modals.cull_start')}</Button>
       </div>
     </>
   );
@@ -233,7 +235,7 @@ export default function CullingModal({
   const renderProgress = () => (
     <div className="flex flex-col items-center justify-center h-48">
       <Loader2 className="w-16 h-16 text-accent animate-spin" />
-      <p className="mt-4 text-text-primary">{progress?.stage || 'Starting...'}</p>
+      <p className="mt-4 text-text-primary">{progress?.stage || t('modals.cull_starting')}</p>
       {progress && progress.total > 0 && (
         <div className="w-full bg-surface rounded-full h-2.5 mt-2">
           <div
@@ -251,11 +253,11 @@ export default function CullingModal({
         <div className="flex flex-col items-center justify-center h-48">
           <XCircle className="w-16 h-16 text-red-500" />
           <Text variant={TextVariants.heading} className="mt-4 text-center">
-            Culling Failed
+            {t('modals.cull_failed')}
           </Text>
           <Text>{error}</Text>
           <div className="mt-6">
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={onClose}>{t('modals.cull_close')}</Button>
           </div>
         </div>
       );
@@ -269,11 +271,11 @@ export default function CullingModal({
         <div className="flex flex-col items-center justify-center h-48">
           <CheckCircle className="w-16 h-16 text-green-500" />
           <Text variant={TextVariants.heading} className="mt-4">
-            No issues found!
+            {t('modals.cull_no_issues')}
           </Text>
-          <Text>All images seem to be unique and sharp.</Text>
+          <Text>{t('modals.cull_all_unique')}</Text>
           <div className="mt-6">
-            <Button onClick={onClose}>Done</Button>
+            <Button onClick={onClose}>{t('modals.cull_done')}</Button>
           </div>
         </div>
       );
@@ -282,7 +284,7 @@ export default function CullingModal({
     return (
       <>
         <Text variant={TextVariants.title} className="mb-4">
-          Culling Suggestions
+          {t('modals.cull_suggestions_title')}
         </Text>
         <div className="border-b border-surface mb-4">
           <nav className="-mb-px flex space-x-4" aria-label="Tabs">
@@ -295,7 +297,7 @@ export default function CullingModal({
                     : 'border-transparent text-text-secondary hover:text-text-primary hover:border-gray-300'
                 } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
               >
-                Similar Groups{' '}
+                {t('modals.cull_similar_groups')}{' '}
                 <span className="bg-surface text-text-secondary rounded-full px-2 py-0.5 text-xs">{numSimilar}</span>
               </button>
             )}
@@ -308,7 +310,7 @@ export default function CullingModal({
                     : 'border-transparent text-text-secondary hover:text-text-primary hover:border-gray-300'
                 } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
               >
-                Blurry Images{' '}
+                {t('modals.cull_blurry_images')}{' '}
                 <span className="bg-surface text-text-secondary rounded-full px-2 py-0.5 text-xs">{numBlurry}</span>
               </button>
             )}
@@ -329,12 +331,12 @@ export default function CullingModal({
                   {suggestions.similarGroups.map((group, index) => (
                     <div key={index} className="bg-surface rounded-lg p-3">
                       <Text variant={TextVariants.heading} className="mb-2">
-                        Group {index + 1}
+                        {t('modals.cull_group_n', { n: index + 1 })}
                       </Text>
                       <div className="grid grid-cols-[1fr_3fr] gap-3">
                         <div>
                           <Text variant={TextVariants.label} className="mb-1">
-                            Best Image
+                            {t('modals.cull_best_image')}
                           </Text>
                           <div className="relative rounded-md overflow-hidden border-2 border-green-500">
                             <img
@@ -348,13 +350,13 @@ export default function CullingModal({
                               color={TextColors.white}
                               className="absolute bottom-0 left-0 right-0 p-1 bg-black/60"
                             >
-                              Score: {group.representative.qualityScore.toFixed(2)}
+                              {t('modals.cull_score', { score: group.representative.qualityScore.toFixed(2) })}
                             </Text>
                           </div>
                         </div>
                         <div>
                           <Text variant={TextVariants.label} className="mb-1">
-                            Duplicates ({group.duplicates.length})
+                            {t('modals.cull_duplicates_count', { count: group.duplicates.length })}
                           </Text>
                           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                             {group.duplicates.map((dup) => (
@@ -365,7 +367,7 @@ export default function CullingModal({
                                 isSelected={selectedRejects.has(dup.path)}
                                 onToggle={() => handleToggleReject(dup.path)}
                               >
-                                Score: {dup.qualityScore.toFixed(2)}
+                                {t('modals.cull_score', { score: dup.qualityScore.toFixed(2) })}
                               </ImageThumbnail>
                             ))}
                           </div>
@@ -385,7 +387,7 @@ export default function CullingModal({
                       isSelected={selectedRejects.has(img.path)}
                       onToggle={() => handleToggleReject(img.path)}
                     >
-                      Sharpness: {img.sharpnessMetric.toFixed(0)}
+                      {t('modals.cull_sharpness', { score: img.sharpnessMetric.toFixed(0) })}
                     </ImageThumbnail>
                   ))}
                 </div>
@@ -408,10 +410,10 @@ export default function CullingModal({
               className="px-4 py-2 rounded-md text-text-secondary hover:bg-surface transition-colors"
               onClick={onClose}
             >
-              Cancel
+              {t('modals.cull_cancel')}
             </button>
             <Button onClick={handleApply} disabled={selectedRejects.size === 0}>
-              Apply to {selectedRejects.size} image{selectedRejects.size !== 1 && 's'}
+              {selectedRejects.size !== 1 ? t('modals.cull_apply_plural', { count: selectedRejects.size }) : t('modals.cull_apply', { count: selectedRejects.size })}
             </Button>
           </div>
         </div>

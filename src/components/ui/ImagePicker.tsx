@@ -2,6 +2,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { X } from 'lucide-react';
 import Text from './Text';
 import { TextVariants } from '../../types/typography';
+import { useTranslation } from 'react-i18next';
 
 interface ImagePickerProps {
   imageName: string | null;
@@ -11,6 +12,7 @@ interface ImagePickerProps {
 }
 
 export default function ImagePicker({ imageName, onImageSelect, onClear, label }: ImagePickerProps) {
+  const { t } = useTranslation();
   const handleSelectFile = async () => {
     try {
       const selected = await open({
@@ -40,19 +42,19 @@ export default function ImagePicker({ imageName, onImageSelect, onClear, label }
           <button
             onClick={handleSelectFile}
             className="text-sm text-text-primary text-right select-none cursor-pointer truncate max-w-[150px] hover:text-accent transition-colors"
-            data-tooltip={imageName || 'Select an image file'}
+            data-tooltip={imageName || t('adjustments.image_select_file_tooltip')}
           >
-            {imageName || 'Select'}
+            {imageName || t('adjustments.image_select')}
           </button>
 
           {imageName && (
             <button
               onClick={onClear}
-              className="flex items-center justify-center p-0.5 rounded-full bg-bg-tertiary hover:bg-surface 
-                         w-0 ml-0 opacity-0 group-hover:w-6 group-hover:ml-0 group-hover:opacity-100 
+              className="flex items-center justify-center p-0.5 rounded-full bg-bg-tertiary hover:bg-surface
+                         w-0 ml-0 opacity-0 group-hover:w-6 group-hover:ml-0 group-hover:opacity-100
                          overflow-hidden pointer-events-none group-hover:pointer-events-auto
                          transition-all duration-200 ease-in-out"
-              data-tooltip="Clear Image"
+              data-tooltip={t('adjustments.image_clear')}
             >
               <X size={14} />
             </button>

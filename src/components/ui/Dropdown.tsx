@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ChevronDown } from 'lucide-react';
 import Input from './Input';
@@ -25,11 +26,12 @@ const Dropdown = <T extends React.Key>({
   className = '',
   onChange,
   options,
-  placeholder = 'Select an option',
-  searchPlaceholder = 'Filter options...',
+  placeholder,
+  searchPlaceholder,
   value,
   disabled = false,
 }: DropdownProps<T>) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -110,7 +112,7 @@ const Dropdown = <T extends React.Key>({
         type="button"
       >
         <Text as="span" variant={TextVariants.label} color={TextColors.primary}>
-          {selectedOption ? selectedOption.label : placeholder}
+          {selectedOption ? selectedOption.label : (placeholder ?? t('app.select_option'))}
         </Text>
         <ChevronDown
           className={`${TEXT_COLOR_KEYS[TextColors.secondary]} transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
@@ -137,7 +139,7 @@ const Dropdown = <T extends React.Key>({
                   ref={searchInputRef}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder={searchPlaceholder}
+                  placeholder={searchPlaceholder ?? t('app.filter_options')}
                   autoFocus={true}
                   className="mb-2"
                 />

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { Save, CheckCircle, XCircle, Loader, X, Ban } from 'lucide-react';
@@ -71,6 +72,7 @@ function WatermarkPreview({
   imageAspectRatio: number;
   watermarkImageAspectRatio: number;
 }) {
+  const { t } = useTranslation();
   const getPositionStyles = () => {
     const minDimPercent = imageAspectRatio > 1 ? 100 / imageAspectRatio : 100;
     const watermarkSizePercent = minDimPercent * (scale / 100);
@@ -136,7 +138,7 @@ function WatermarkPreview({
       style={{ aspectRatio: imageAspectRatio }}
     >
       <div className="absolute inset-0 flex items-center justify-center">
-        <Text variant={TextVariants.label}>Preview</Text>
+        <Text variant={TextVariants.label}>{t('export.watermark_preview')}</Text>
       </div>
       {watermarkPath && (
         <div style={getPositionStyles()}>
@@ -144,7 +146,7 @@ function WatermarkPreview({
             className="w-full bg-accent/50 border-2 border-dashed border-accent rounded-xs flex items-center justify-center"
             style={{ aspectRatio: watermarkImageAspectRatio }}
           >
-            <span className="text-white text-[8px] font-bold">Logo</span>
+            <span className="text-white text-[8px] font-bold">{t('export.watermark_logo')}</span>
           </div>
         </div>
       )}
@@ -161,11 +163,11 @@ const formatBytes = (bytes: number, decimals = 2) => {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 };
 
-const resizeModeOptions = [
-  { label: 'Long Edge', value: 'longEdge' },
-  { label: 'Short Edge', value: 'shortEdge' },
-  { label: 'Width', value: 'width' },
-  { label: 'Height', value: 'height' },
+const resizeModeOptionsBase = [
+  { labelKey: 'export.long_edge', value: 'longEdge' },
+  { labelKey: 'export.short_edge', value: 'shortEdge' },
+  { labelKey: 'export.width', value: 'width' },
+  { labelKey: 'export.height', value: 'height' },
 ];
 
 export default function LibraryExportPanel({
@@ -220,6 +222,8 @@ export default function LibraryExportPanel({
     setPreserveFolders,
   } = useExportSettings();
 
+  const { t } = useTranslation();
+  const resizeModeOptions = resizeModeOptionsBase.map((o) => ({ label: t(o.labelKey), value: o.value }));
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
 
   useEffect(() => {
@@ -319,15 +323,15 @@ export default function LibraryExportPanel({
   }, [watermarkPath]);
 
   const anchorOptions = [
-    { label: 'Top Left', value: WatermarkAnchor.TopLeft },
-    { label: 'Top Center', value: WatermarkAnchor.TopCenter },
-    { label: 'Top Right', value: WatermarkAnchor.TopRight },
-    { label: 'Center Left', value: WatermarkAnchor.CenterLeft },
-    { label: 'Center', value: WatermarkAnchor.Center },
-    { label: 'Center Right', value: WatermarkAnchor.CenterRight },
-    { label: 'Bottom Left', value: WatermarkAnchor.BottomLeft },
-    { label: 'Bottom Center', value: WatermarkAnchor.BottomCenter },
-    { label: 'Bottom Right', value: WatermarkAnchor.BottomRight },
+    { label: t('export.top_left'), value: WatermarkAnchor.TopLeft },
+    { label: t('export.top_center'), value: WatermarkAnchor.TopCenter },
+    { label: t('export.top_right'), value: WatermarkAnchor.TopRight },
+    { label: t('export.center_left'), value: WatermarkAnchor.CenterLeft },
+    { label: t('export.center'), value: WatermarkAnchor.Center },
+    { label: t('export.center_right'), value: WatermarkAnchor.CenterRight },
+    { label: t('export.bottom_left'), value: WatermarkAnchor.BottomLeft },
+    { label: t('export.bottom_center'), value: WatermarkAnchor.BottomCenter },
+    { label: t('export.bottom_right'), value: WatermarkAnchor.BottomRight },
   ];
 
   const debouncedEstimateSize = useMemo(
@@ -487,7 +491,7 @@ export default function LibraryExportPanel({
     } catch (error) {
       console.error('Error exporting images:', error);
       setExportState({
-        errorMessage: typeof error === 'string' ? error : 'Failed to start export.',
+        errorMessage: typeof error === 'string' ? error : t('export.failed'),
         progress,
         status: Status.Error,
       });
@@ -504,12 +508,12 @@ export default function LibraryExportPanel({
 
   const canExport = numImages > 0;
   const isLut = fileFormat === FileFormats.Cube;
-  const itemLabel = isLut ? 'LUT' : 'Image';
+  const itemLabel = isLut ? t('export.item_lut') : t('export.image');
 
   return (
     <div className="h-full bg-bg-secondary rounded-lg flex flex-col">
       <div className="p-4 flex justify-between items-center shrink-0 border-b border-surface">
-        <Text variant={TextVariants.title}>Export</Text>
+        <Text variant={TextVariants.title}>{t('export.title')}</Text>
         <button
           onClick={onClose}
           className="p-1 rounded-md text-text-secondary hover:bg-surface hover:text-text-primary"
@@ -526,7 +530,7 @@ export default function LibraryExportPanel({
               currentSettings={currentSettingsObject}
               onApplyPreset={handleApplyPreset}
             />
-            <Section title="File Settings">
+            <Section title={t('export.file_settings')}>
               <div className="grid grid-cols-3 gap-2">
                 {FILE_FORMATS.map((format: FileFormat) => (
                   <button
@@ -547,7 +551,7 @@ export default function LibraryExportPanel({
                 <div className={isExporting ? 'opacity-50 pointer-events-none' : ''}>
                   <Slider
                     defaultValue={90}
-                    label={fileFormat === FileFormats.Jxl && jpegQuality === 100 ? 'Quality (Lossless)' : 'Quality'}
+                    label={fileFormat === FileFormats.Jxl && jpegQuality === 100 ? t('export.quality_lossless') : t('export.quality')}
                     max={100}
                     min={1}
                     onChange={(e) => setJpegQuality(parseInt(e.target.value))}
@@ -559,7 +563,7 @@ export default function LibraryExportPanel({
               )}
             </Section>
 
-            <Section title="File Naming">
+            <Section title={t('export.file_naming')}>
               <input
                 className="w-full bg-bg-primary border border-surface rounded-md p-2 text-sm text-text-primary focus:ring-accent focus:border-accent"
                 disabled={isExporting}
@@ -582,7 +586,7 @@ export default function LibraryExportPanel({
               </div>
               <div className="mt-4">
                 <Switch
-                  label="Preserve Folder Structure"
+                  label={t('export.preserve_folder')}
                   checked={preserveFolders}
                   onChange={setPreserveFolders}
                   disabled={isExporting}
@@ -592,9 +596,9 @@ export default function LibraryExportPanel({
 
             {fileFormat !== FileFormats.Cube && (
               <>
-                <Section title="Image Sizing">
+                <Section title={t('export.image_sizing')}>
                   <Switch
-                    label="Resize to Fit"
+                    label={t('export.resize_to_fit')}
                     checked={enableResize}
                     onChange={setEnableResize}
                     disabled={isExporting}
@@ -619,12 +623,12 @@ export default function LibraryExportPanel({
                           type="number"
                           value={resizeValue}
                         />
-                        <Text variant={TextVariants.label}>pixels</Text>
+                        <Text variant={TextVariants.label}>{t('export.pixels')}</Text>
                       </div>
                       <Switch
                         checked={dontEnlarge}
                         disabled={isExporting}
-                        label="Don't Enlarge"
+                        label={t('export.dont_enlarge')}
                         onChange={setDontEnlarge}
                       />
                     </div>
@@ -633,17 +637,17 @@ export default function LibraryExportPanel({
 
                 {fileFormat == FileFormats.Jpeg && (
                   <>
-                    <Section title="Metadata">
+                    <Section title={t('export.metadata')}>
                       <Switch
                         checked={keepMetadata}
                         disabled={isExporting}
-                        label="Keep Original Metadata"
+                        label={t('export.keep_metadata')}
                         onChange={setKeepMetadata}
                       />
                       {keepMetadata && (
                         <div className="pl-2 border-l-2 border-surface">
                           <Switch
-                            label="Remove GPS Data"
+                            label={t('export.remove_gps')}
                             checked={stripGps}
                             onChange={setStripGps}
                             disabled={isExporting}
@@ -654,27 +658,27 @@ export default function LibraryExportPanel({
                   </>
                 )}
 
-                <Section title="File Timestamps">
+                <Section title={t('export.timestamps')}>
                   <Switch
                     checked={preserveTimestamps}
                     disabled={isExporting}
-                    label="Set File Timestamps from EXIF Capture Date"
+                    label={t('export.set_timestamps')}
                     onChange={setPreserveTimestamps}
                   />
                 </Section>
 
-                <Section title="Masks">
+                <Section title={t('export.masks')}>
                   <Switch
-                    label="Export masks as separate files"
+                    label={t('export.export_masks')}
                     checked={exportMasks}
                     onChange={setExportMasks}
                     disabled={isExporting}
                   />
                 </Section>
 
-                <Section title="Watermark">
+                <Section title={t('export.watermark')}>
                   <Switch
-                    label="Add Watermark"
+                    label={t('export.add_watermark')}
                     checked={enableWatermark}
                     onChange={setEnableWatermark}
                     disabled={isExporting}
@@ -682,7 +686,7 @@ export default function LibraryExportPanel({
                   {enableWatermark && (
                     <div className="space-y-4 pl-2 border-l-2 border-surface">
                       <ImagePicker
-                        label="Watermark Image"
+                        label={t('export.watermark_image')}
                         imageName={watermarkPath ? watermarkPath.split(/[\\/]/).pop() || null : null}
                         onImageSelect={setWatermarkPath}
                         onClear={() => setWatermarkPath(null)}
@@ -698,7 +702,7 @@ export default function LibraryExportPanel({
                           />
                           <div>
                             <Slider
-                              label="Scale"
+                              label={t('export.scale')}
                               min={1}
                               max={50}
                               step={1}
@@ -708,7 +712,7 @@ export default function LibraryExportPanel({
                               defaultValue={10}
                             />
                             <Slider
-                              label="Spacing"
+                              label={t('export.spacing')}
                               min={0}
                               max={25}
                               step={1}
@@ -718,7 +722,7 @@ export default function LibraryExportPanel({
                               defaultValue={5}
                             />
                             <Slider
-                              label="Opacity"
+                              label={t('export.opacity')}
                               min={0}
                               max={100}
                               step={1}
@@ -752,7 +756,7 @@ export default function LibraryExportPanel({
             weight={TextWeights.normal}
             className="text-center mt-4"
           >
-            No images selected.
+            {t('export.no_images_selected')}
           </Text>
         )}
       </div>
@@ -760,11 +764,11 @@ export default function LibraryExportPanel({
       <div className="p-4 border-t border-surface shrink-0 space-y-2">
         <Text as="div" variant={TextVariants.small} color={TextColors.primary} className="text-center">
           {isEstimating ? (
-            <span className="italic">Estimating size...</span>
+            <span className="italic">{t('export.estimating')}</span>
           ) : estimatedSize !== null ? (
             <span>
-              Estimated total size: ~{formatBytes(estimatedSize)}
-              {numImages > 1 && ` (${formatBytes(estimatedSize / numImages)} avg)`}
+              {t('export.estimated_total', { size: formatBytes(estimatedSize) })}
+              {numImages > 1 && ` ${t('export.estimated_avg', { size: formatBytes(estimatedSize / numImages) })}`}
             </span>
           ) : null}
         </Text>
@@ -788,28 +792,32 @@ export default function LibraryExportPanel({
             <>
               <span className="flex items-center group-hover:hidden">
                 <Loader size={18} className="animate-spin mr-2" />
-                Exporting…{progress.total > 1 && ` (${progress.current}/${progress.total})`}
+                {progress.total > 1
+                  ? t('export.exporting_progress', { current: progress.current, total: progress.total })
+                  : t('export.exporting')}
               </span>
               <span className="hidden items-center group-hover:flex">
                 <Ban size={18} className="mr-2" />
-                Cancel Export
+                {t('export.cancel')}
               </span>
             </>
           ) : status === Status.Success ? (
             <>
-              <CheckCircle size={18} className="mr-2" /> Export successful!
+              <CheckCircle size={18} className="mr-2" /> {t('export.success')}
             </>
           ) : status === Status.Error ? (
             <>
-              <XCircle size={18} className="mr-2" /> {errorMessage || 'Export failed'}
+              <XCircle size={18} className="mr-2" /> {errorMessage || t('export.failed')}
             </>
           ) : status === Status.Cancelled ? (
             <>
-              <Ban size={18} className="mr-2" /> Export cancelled
+              <Ban size={18} className="mr-2" /> {t('export.cancelled')}
             </>
           ) : (
             <>
-              <Save size={18} className="mr-2" /> Export {numImages > 1 ? `${numImages} ${itemLabel}s` : itemLabel}
+              <Save size={18} className="mr-2" /> {numImages > 1
+                ? t('export.export_btn_plural', { count: numImages, item: itemLabel })
+                : t('export.export_btn_single', { item: itemLabel })}
             </>
           )}
         </Button>

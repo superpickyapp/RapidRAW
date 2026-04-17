@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { Check, ChevronDown, ChevronRight, Plus, Star, Tag, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { SelectedImage, AppSettings, Invokes } from '../../ui/AppProperties';
 import { COLOR_LABELS, Color } from '../../../utils/adjustments';
 import Text from '../../ui/Text';
@@ -87,22 +88,22 @@ function MetadataItem({ label, value }: MetaDataItemProps) {
 const KEY_CAMERA_SETTINGS_MAP: CameraSettings = {
   FNumber: {
     format: (value: number) => `${value}`,
-    label: 'Aperture',
+    label: 'metadata.aperture',
   },
   ExposureTime: {
     format: (value: number) => `${value}`,
-    label: 'Shutter Speed',
+    label: 'metadata.shutter_speed',
   },
   PhotographicSensitivity: {
-    label: 'ISO',
+    label: 'metadata.iso',
   },
   FocalLengthIn35mmFilm: {
     format: (value: number) => (String(value).endsWith('mm') ? value : `${value} mm`),
-    label: 'Focal Length',
+    label: 'metadata.focal_length',
   },
   LensModel: {
     format: (value: number) => String(value).replace(/"/g, ''),
-    label: 'Lens',
+    label: 'metadata.lens',
   },
 };
 
@@ -123,6 +124,7 @@ export default function MetadataPanel({
   onTagsChanged,
   appSettings,
 }: MetaDataPanelProps) {
+  const { t } = useTranslation();
   const [isOrganizationExpanded, setIsOrganizationExpanded] = useState(false);
   const [tagInputValue, setTagInputValue] = useState('');
   const [isTagInputFocused, setIsTagInputFocused] = useState(false);
@@ -139,7 +141,7 @@ export default function MetadataPanel({
       const formattedValue = config.format ? config.format(value) : value;
       return {
         key: key,
-        label: config.label,
+        label: t(config.label),
         value: formattedValue,
       };
     }).filter(Boolean);
@@ -219,19 +221,19 @@ export default function MetadataPanel({
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 flex justify-between items-center shrink-0 border-b border-surface">
-        <Text variant={TextVariants.title}>Metadata</Text>
+        <Text variant={TextVariants.title}>{t('metadata.title')}</Text>
       </div>
       <div className="grow overflow-y-auto p-4 custom-scrollbar">
         {selectedImage ? (
           <div className="flex flex-col gap-8">
             <div>
               <Text variant={TextVariants.heading} className="border-b border-surface pb-1 mb-2">
-                Image Properties
+                {t('metadata.image_properties')}
               </Text>
               <div className="flex flex-col gap-2">
-                <MetadataItem label="Filename" value={selectedImage.path.split(/[\\/]/).pop()} />
-                <MetadataItem label="Dimensions" value={`${selectedImage.width} x ${selectedImage.height}`} />
-                <MetadataItem label="Capture Date" value={selectedImage.exif?.DateTimeOriginal || '-'} />
+                <MetadataItem label={t('metadata.filename')} value={selectedImage.path.split(/[\\/]/).pop()} />
+                <MetadataItem label={t('metadata.dimensions')} value={`${selectedImage.width} x ${selectedImage.height}`} />
+                <MetadataItem label={t('metadata.capture_date')} value={selectedImage.exif?.DateTimeOriginal || '-'} />
               </div>
 
               <div className="mt-4 bg-surface rounded-md border border-bg-primary overflow-hidden">
@@ -245,7 +247,7 @@ export default function MetadataPanel({
                     color={TextColors.primary}
                     className="flex items-center gap-2"
                   >
-                    <Tag size={16} /> Organization
+                    <Tag size={16} /> {t('metadata.organization')}
                   </Text>
                   <Text color={TextColors.secondary}>
                     {isOrganizationExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -269,7 +271,7 @@ export default function MetadataPanel({
                             weight={TextWeights.semibold}
                             className="uppercase tracking-wider mb-2 block"
                           >
-                            Rating
+                            {t('metadata.rating')}
                           </Text>
                           <div className="flex items-center gap-2">
                             {[1, 2, 3, 4, 5].map((star) => (
@@ -298,7 +300,7 @@ export default function MetadataPanel({
                             weight={TextWeights.semibold}
                             className="uppercase tracking-wider mb-2 block"
                           >
-                            Color Label
+                            {t('metadata.color_label')}
                           </Text>
                           <div className="flex flex-wrap gap-2">
                             <button
@@ -309,7 +311,7 @@ export default function MetadataPanel({
                                   ? 'ring-2 ring-text-secondary ring-offset-1 ring-offset-bg-primary'
                                   : 'opacity-50 hover:opacity-100',
                               )}
-                              data-tooltip="None"
+                              data-tooltip={t('metadata.none')}
                             >
                               <X size={12} className="text-text-tertiary" />
                             </button>
@@ -338,7 +340,7 @@ export default function MetadataPanel({
                             weight={TextWeights.semibold}
                             className="uppercase tracking-wider mb-2 block"
                           >
-                            Tags
+                            {t('metadata.tags')}
                           </Text>
                           <div className="flex flex-wrap gap-1 mb-2">
                             <AnimatePresence>
@@ -366,7 +368,7 @@ export default function MetadataPanel({
                                 ))
                               ) : (
                                 <Text variant={TextVariants.small} className="italic">
-                                  No tags
+                                  {t('metadata.no_tags')}
                                 </Text>
                               )}
                             </AnimatePresence>
@@ -385,7 +387,7 @@ export default function MetadataPanel({
                               onKeyDown={handleTagInputKeyDown}
                               onFocus={() => setIsTagInputFocused(true)}
                               onBlur={() => setIsTagInputFocused(false)}
-                              placeholder="Add tag..."
+                              placeholder={t('metadata.add_tag')}
                               className="bg-transparent border-none outline-hidden text-xs w-full text-text-primary placeholder-text-tertiary"
                             />
                             <button
@@ -420,7 +422,7 @@ export default function MetadataPanel({
             {keyCameraSettings.length > 0 && (
               <div>
                 <Text variant={TextVariants.heading} className="border-b border-surface pb-1 mb-2">
-                  Key Camera Settings
+                  {t('metadata.key_camera_settings')}
                 </Text>
                 <div className="flex flex-col gap-2">
                   {keyCameraSettings.map((item: any) => (
@@ -433,7 +435,7 @@ export default function MetadataPanel({
             {hasGps && gpsData?.lat && gpsData?.lon && (
               <div>
                 <Text variant={TextVariants.heading} className="border-b border-surface pb-1 mb-2">
-                  GPS Location
+                  {t('metadata.gps_location')}
                 </Text>
                 <div className="flex flex-col gap-2">
                   <div className="relative rounded-md overflow-hidden border border-surface">
@@ -457,13 +459,13 @@ export default function MetadataPanel({
                       href={`https://www.openstreetmap.org/?mlat=${gpsData.lat}&mlon=${gpsData.lon}#map=15/${gpsData.lat}/${gpsData.lon}`}
                       rel="noopener noreferrer"
                       target="_blank"
-                      data-tooltip="Click to open map in a new tab"
+                      data-tooltip={t('metadata.open_map')}
                     ></a>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <MetadataItem label="Latitude" value={gpsData.lat?.toFixed(6)} />
-                    <MetadataItem label="Longitude" value={gpsData.lon?.toFixed(6)} />
-                    {gpsData.altitude && <MetadataItem label="Altitude" value={gpsData.altitude} />}
+                    <MetadataItem label={t('metadata.latitude')} value={gpsData.lat?.toFixed(6)} />
+                    <MetadataItem label={t('metadata.longitude')} value={gpsData.lon?.toFixed(6)} />
+                    {gpsData.altitude && <MetadataItem label={t('metadata.altitude')} value={gpsData.altitude} />}
                   </div>
                 </div>
               </div>
@@ -472,7 +474,7 @@ export default function MetadataPanel({
             {otherExifEntries.length > 0 && (
               <div>
                 <Text variant={TextVariants.heading} className="border-b border-surface pb-1 mb-2">
-                  All EXIF Data
+                  {t('metadata.all_exif')}
                 </Text>
                 <div className="flex flex-col gap-2">
                   {otherExifEntries.map(([tag, value]) => (
@@ -484,7 +486,7 @@ export default function MetadataPanel({
 
             {Object.keys(selectedImage.exif || {}).length === 0 && (
               <Text variant={TextVariants.small} className="text-center mt-4">
-                No EXIF data found in this file.
+                {t('metadata.no_exif')}
               </Text>
             )}
           </div>
@@ -495,7 +497,7 @@ export default function MetadataPanel({
             weight={TextWeights.normal}
             className="text-center mt-4"
           >
-            No image selected.
+            {t('metadata.no_image')}
           </Text>
         )}
       </div>

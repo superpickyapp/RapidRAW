@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, Copy, ClipboardPaste } from 'lucide-react';
 import { ActiveChannel, Adjustments, Coord } from '../../utils/adjustments';
@@ -158,6 +159,7 @@ export default function CurveGraph({
   onDragStateChange,
 }: CurveGraphProps) {
   const { showContextMenu } = useContextMenu();
+  const { t } = useTranslation();
   const [activeChannel, setActiveChannel] = useState<ActiveChannel>(ActiveChannel.Luma);
   const [draggingPointIndex, setDraggingPointIndex] = useState<number | null>(null);
   const [localPoints, setLocalPoints] = useState<Array<Coord> | null>(null);
@@ -440,21 +442,22 @@ export default function CurveGraph({
       },
     );
 
+    const channelName = t(`adjustments.channel_${activeChannel}`);
     const options = [
       {
-        label: `Copy ${activeChannel.charAt(0).toUpperCase() + activeChannel.slice(1)} Curve`,
+        label: t('adjustments.copy_curve', { channel: channelName }),
         icon: Copy,
         onClick: handleCopy,
       },
       {
-        label: 'Paste Curve',
+        label: t('adjustments.paste_curve'),
         icon: ClipboardPaste,
         onClick: handlePaste,
         disabled: !curveClipboard,
       },
       { type: OPTION_SEPARATOR },
       {
-        label: `Reset ${activeChannel.charAt(0).toUpperCase() + activeChannel.slice(1)} Curve`,
+        label: t('adjustments.reset_curve', { channel: channelName }),
         icon: RotateCcw,
         onClick: handleReset,
       },
@@ -462,7 +465,7 @@ export default function CurveGraph({
 
     if (areOtherChannelsDirty) {
       options.push({
-        label: 'Reset All Curves',
+        label: t('adjustments.reset_all_curves'),
         icon: RotateCcw,
         onClick: handleResetAll,
       });

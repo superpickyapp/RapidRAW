@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { AlertOctagon } from 'lucide-react';
 import { WaveformData } from '../../ui/AppProperties';
@@ -14,33 +15,33 @@ interface WaveformProps {
   theme?: string;
 }
 
-const modeButtons = [
-  { mode: DisplayMode.Luma, label: 'L', tooltip: 'Luma', bgClass: 'bg-accent', textActiveClass: 'text-button-text' },
+const modeButtonsBase = [
+  { mode: DisplayMode.Luma, label: 'L', tooltipKey: 'editor.waveform_luma', bgClass: 'bg-accent', textActiveClass: 'text-button-text' },
   {
     mode: DisplayMode.Rgb,
     label: 'RGB',
-    tooltip: 'RGB Overlay',
+    tooltipKey: 'editor.waveform_rgb',
     bgClass: 'bg-accent',
     textActiveClass: 'text-button-text',
   },
   {
     mode: DisplayMode.Parade,
     label: 'P',
-    tooltip: 'Parade',
+    tooltipKey: 'editor.waveform_parade',
     bgClass: 'bg-accent',
     textActiveClass: 'text-button-text',
   },
   {
     mode: DisplayMode.Vectorscope,
     label: 'V',
-    tooltip: 'Vectorscope',
+    tooltipKey: 'editor.waveform_vectorscope',
     bgClass: 'bg-accent',
     textActiveClass: 'text-button-text',
   },
   {
     mode: DisplayMode.Histogram,
     label: 'H',
-    tooltip: 'Histogram',
+    tooltipKey: 'editor.waveform_histogram',
     bgClass: 'bg-accent',
     textActiveClass: 'text-button-text',
   },
@@ -450,8 +451,11 @@ export default function Waveform({
   onToggleClipping,
   theme,
 }: WaveformProps) {
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const modeButtons = modeButtonsBase.map((b) => ({ ...b, tooltip: t(b.tooltipKey) }));
 
   const isLightTheme = theme ? ['light', 'snow', 'arctic'].includes(theme) : false;
   const isHistogram = displayMode === DisplayMode.Histogram;
@@ -611,7 +615,7 @@ export default function Waveform({
               )}
 
               <LayoutGroup>
-                {modeButtons.map(({ mode, label, tooltip, bgClass, textActiveClass }) => (
+                {modeButtons.map(({ mode, label, tooltip, bgClass, textActiveClass }: { mode: string; label: string; tooltip: string; bgClass: string; textActiveClass: string }) => (
                   <button
                     key={mode}
                     onClick={() => setDisplayMode(mode)}

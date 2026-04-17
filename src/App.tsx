@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from './i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -266,6 +268,7 @@ const insertChildrenIntoTree = (node: any, targetPath: string, newChildren: any[
 };
 
 function App() {
+  const { t } = useTranslation();
   const [rootPath, setRootPath] = useState<string | null>(null);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const [osPlatform, setOsPlatform] = useState(() => {
@@ -1780,6 +1783,9 @@ function App() {
         if (settings?.theme) {
           setTheme(settings.theme);
         }
+        if (settings?.language) {
+          i18n.changeLanguage(settings.language);
+        }
         if (settings?.uiVisibility) {
           setUiVisibility((prev) => ({ ...prev, ...settings.uiVisibility }));
         }
@@ -1972,13 +1978,18 @@ function App() {
     const fontFamily = appSettings?.fontFamily || 'poppins';
     const fontStack =
       fontFamily === 'system'
-        ? '-apple-system, BlinkMacSystemFont, system-ui, sans-serif'
-        : "'Poppins', system-ui, sans-serif";
+        ? "-apple-system, BlinkMacSystemFont, system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif"
+        : "'Poppins', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif";
     root.style.setProperty('--font-family', fontStack);
 
     const isLight = [Theme.Light, Theme.Snow, Theme.Arctic].includes(effectThemeForWindow);
     invoke(Invokes.UpdateWindowEffect, { theme: isLight ? Theme.Light : Theme.Dark });
-  }, [theme, adaptivePalette, appSettings?.fontFamily]);
+
+    const language = appSettings?.language || 'en';
+    if (i18n.language !== language) {
+      i18n.changeLanguage(language);
+    }
+  }, [theme, adaptivePalette, appSettings?.fontFamily, appSettings?.language]);
 
   useEffect(() => {
     if (isInitialThemeMount.current) {
@@ -2593,20 +2604,20 @@ function App() {
       !pathsToDelete[0].includes('?vc=') &&
       imageList.some((image) => image.path.startsWith(`${pathsToDelete[0]}?vc=`));
 
-    let modalTitle = 'Confirm Delete';
+    let modalTitle = t('modals.delete_confirm_title');
     let modalMessage = '';
-    let confirmText = 'Delete';
+    let confirmText = t('modals.delete_single_confirm');
 
     if (selectionHasVirtualCopies) {
-      modalTitle = 'Delete Image and All Virtual Copies?';
-      modalMessage = `Are you sure you want to permanently delete this image and all of its virtual copies? This action cannot be undone.`;
-      confirmText = 'Delete All';
+      modalTitle = t('modals.delete_vc_title');
+      modalMessage = t('modals.delete_vc_message');
+      confirmText = t('modals.delete_vc_confirm');
     } else if (isSingle) {
-      modalMessage = `Are you sure you want to permanently delete this image? This action cannot be undone. Right-click for more options (e.g., deleting associated files).`;
-      confirmText = 'Delete Selected Only';
+      modalMessage = t('modals.delete_single_message');
+      confirmText = t('modals.delete_single_confirm');
     } else {
-      modalMessage = `Are you sure you want to permanently delete these ${pathsToDelete.length} images? This action cannot be undone. Right-click for more options (e.g., deleting associated files).`;
-      confirmText = 'Delete Selected Only';
+      modalMessage = t('modals.delete_multi_message', { count: pathsToDelete.length });
+      confirmText = t('modals.delete_multi_confirm');
     }
 
     setConfirmModalState({
@@ -4204,7 +4215,7 @@ function App() {
             },
           ],
           multiple: true,
-          title: 'Select files to import',
+          title: t('app.ctx_select_files_import'),
         });
 
         if (Array.isArray(selected) && selected.length > 0) {
@@ -4238,7 +4249,7 @@ function App() {
 
     const options: Array<Option> = [
       {
-        label: 'Export Image',
+        label: t('app.ctx_export_image'),
         icon: Save,
         onClick: () => {
           setRenderedRightPanel(Panel.Export);
@@ -4246,28 +4257,28 @@ function App() {
         },
       },
       { type: OPTION_SEPARATOR },
-      { label: 'Undo', icon: Undo, onClick: undo, disabled: !canUndo },
-      { label: 'Redo', icon: Redo, onClick: redo, disabled: !canRedo },
+      { label: t('app.ctx_undo'), icon: Undo, onClick: undo, disabled: !canUndo },
+      { label: t('app.ctx_redo'), icon: Redo, onClick: redo, disabled: !canRedo },
       { type: OPTION_SEPARATOR },
-      { label: 'Copy Adjustments', icon: Copy, onClick: handleCopyAdjustments },
+      { label: t('app.ctx_copy_adjustments'), icon: Copy, onClick: handleCopyAdjustments },
       {
-        label: 'Paste Adjustments',
+        label: t('app.ctx_paste_adjustments'),
         icon: ClipboardPaste,
         onClick: handlePasteAdjustments,
         disabled: copiedAdjustments === null,
       },
       {
-        label: 'Productivity',
+        label: t('app.ctx_productivity'),
         icon: Gauge,
         submenu: [
           {
-            label: 'Auto Adjust Image',
+            label: t('app.ctx_auto_adjust'),
             icon: Aperture,
             onClick: handleAutoAdjustments,
             disabled: !selectedImage?.isReady,
           },
           {
-            label: 'Denoise Image',
+            label: t('app.ctx_denoise_image'),
             icon: Grip,
             onClick: () => {
               setDenoiseModalState({
@@ -4282,7 +4293,7 @@ function App() {
             },
           },
           {
-            label: 'Convert Negative',
+            label: t('app.ctx_convert_negative'),
             icon: Film,
             onClick: () => {
               if (selectedImage) {
@@ -4296,16 +4307,16 @@ function App() {
           {
             disabled: true,
             icon: SquaresUnite,
-            label: 'Stitch Panorama',
+            label: t('app.ctx_stitch_panorama'),
           },
           {
             disabled: true,
             icon: Images,
-            label: 'Merge to HDR',
+            label: t('app.ctx_merge_hdr'),
           },
           {
             icon: LayoutTemplate,
-            label: 'Frame Image',
+            label: t('app.ctx_frame_image'),
             onClick: () => {
               setCollageModalState({
                 isOpen: true,
@@ -4314,7 +4325,7 @@ function App() {
             },
           },
           {
-            label: 'Cull Image',
+            label: t('app.ctx_cull_image'),
             icon: Users,
             disabled: true,
           },
@@ -4322,27 +4333,27 @@ function App() {
       },
       { type: OPTION_SEPARATOR },
       {
-        label: 'Rating',
+        label: t('app.ctx_rating'),
         icon: Star,
         submenu: [0, 1, 2, 3, 4, 5].map((rating: number) => ({
-          label: rating === 0 ? 'No Rating' : `${rating} Star${rating !== 1 ? 's' : ''}`,
+          label: rating === 0 ? t('app.ctx_no_rating') : rating === 1 ? t('app.ctx_star_one') : t('app.ctx_stars', { count: rating }),
           onClick: () => handleRate(rating),
         })),
       },
       {
-        label: 'Color Label',
+        label: t('app.ctx_color_label'),
         icon: Palette,
         submenu: [
-          { label: 'No Label', onClick: () => handleSetColorLabel(null) },
+          { label: t('app.ctx_no_label'), onClick: () => handleSetColorLabel(null) },
           ...COLOR_LABELS.map((label: Color) => ({
-            label: label.name.charAt(0).toUpperCase() + label.name.slice(1),
+            label: t(`library.color_${label.name}`, { defaultValue: label.name.charAt(0).toUpperCase() + label.name.slice(1) }),
             color: label.color,
             onClick: () => handleSetColorLabel(label.name),
           })),
         ],
       },
       {
-        label: 'Tagging',
+        label: t('app.ctx_tagging'),
         icon: Tag,
         submenu: [
           {
@@ -4358,7 +4369,7 @@ function App() {
       },
       { type: OPTION_SEPARATOR },
       {
-        label: 'Reset Adjustments',
+        label: t('app.ctx_reset_adjustments'),
         icon: RotateCcw,
         onClick: () => {
           debouncedSetHistory.cancel();
@@ -4401,8 +4412,8 @@ function App() {
     const selectionCount = finalSelection.length;
     const isSingleSelection = selectionCount === 1;
     const isEditingThisImage = selectedImage?.path === path;
-    const deleteLabel = isSingleSelection ? 'Delete Image' : `Delete ${selectionCount} Images`;
-    const exportLabel = isSingleSelection ? 'Export Image' : `Export ${selectionCount} Images`;
+    const deleteLabel = isSingleSelection ? t('app.ctx_delete_image') : t('app.ctx_delete_images', { count: selectionCount });
+    const exportLabel = isSingleSelection ? t('app.ctx_export_image') : t('app.ctx_export_images', { count: selectionCount });
 
     const selectionHasVirtualCopies =
       isSingleSelection &&
@@ -4419,9 +4430,9 @@ function App() {
     let deleteSubmenu;
     if (selectionHasVirtualCopies) {
       deleteSubmenu = [
-        { label: 'Cancel', icon: X, onClick: () => {} },
+        { label: t('app.ctx_cancel'), icon: X, onClick: () => {} },
         {
-          label: 'Confirm Delete + Virtual Copies',
+          label: t('app.ctx_confirm_delete_vc'),
           icon: Check,
           isDestructive: true,
           onClick: () => executeDelete(finalSelection, { includeAssociated: false }),
@@ -4429,15 +4440,15 @@ function App() {
       ];
     } else if (hasAssociatedFiles) {
       deleteSubmenu = [
-        { label: 'Cancel', icon: X, onClick: () => {} },
+        { label: t('app.ctx_cancel'), icon: X, onClick: () => {} },
         {
-          label: 'Delete Selected Only',
+          label: t('app.ctx_delete_selected_only'),
           icon: Check,
           isDestructive: true,
           onClick: () => executeDelete(finalSelection, { includeAssociated: false }),
         },
         {
-          label: 'Delete + Associated',
+          label: t('app.ctx_delete_associated'),
           icon: Check,
           isDestructive: true,
           onClick: () => executeDelete(finalSelection, { includeAssociated: true }),
@@ -4445,9 +4456,9 @@ function App() {
       ];
     } else {
       deleteSubmenu = [
-        { label: 'Cancel', icon: X, onClick: () => {} },
+        { label: t('app.ctx_cancel'), icon: X, onClick: () => {} },
         {
-          label: 'Confirm',
+          label: t('app.ctx_confirm'),
           icon: Check,
           isDestructive: true,
           onClick: () => executeDelete(finalSelection, { includeAssociated: false }),
@@ -4462,17 +4473,17 @@ function App() {
       submenu: deleteSubmenu,
     };
 
-    const pasteLabel = isSingleSelection ? 'Paste Adjustments' : `Paste Adjustments to ${selectionCount} Images`;
-    const resetLabel = isSingleSelection ? 'Reset Adjustments' : `Reset Adjustments on ${selectionCount} Images`;
-    const copyLabel = isSingleSelection ? 'Copy Image' : `Copy ${selectionCount} Images`;
-    const autoAdjustLabel = isSingleSelection ? 'Auto Adjust Image' : `Auto Adjust Images`;
-    const renameLabel = isSingleSelection ? 'Rename Image' : `Rename ${selectionCount} Images`;
-    const cullLabel = isSingleSelection ? 'Cull Image' : `Cull Images`;
-    const collageLabel = isSingleSelection ? 'Frame Image' : 'Create Collage';
-    const stitchLabel = 'Stitch Panorama';
-    const conversionLabel = isSingleSelection ? 'Convert Negative' : 'Convert Negatives';
-    const denoiseLabel = isSingleSelection ? 'Denoise Image' : 'Denoise Images';
-    const mergeLabel = `Merge to HDR`;
+    const pasteLabel = isSingleSelection ? t('app.ctx_paste_adjustments') : t('app.ctx_paste_adjustments_count', { count: selectionCount });
+    const resetLabel = isSingleSelection ? t('app.ctx_reset_adjustments') : t('app.ctx_reset_adjustments_count', { count: selectionCount });
+    const copyLabel = isSingleSelection ? t('app.ctx_copy_image') : t('app.ctx_copy_images', { count: selectionCount });
+    const autoAdjustLabel = isSingleSelection ? t('app.ctx_auto_adjust') : t('app.ctx_auto_adjust_images');
+    const renameLabel = isSingleSelection ? t('app.ctx_rename_image') : t('app.ctx_rename_images', { count: selectionCount });
+    const cullLabel = isSingleSelection ? t('app.ctx_cull_image') : t('app.ctx_cull_images');
+    const collageLabel = isSingleSelection ? t('app.ctx_frame_image') : t('app.ctx_create_collage');
+    const stitchLabel = t('app.ctx_stitch_panorama');
+    const conversionLabel = isSingleSelection ? t('app.ctx_convert_negative') : t('app.ctx_convert_negatives');
+    const denoiseLabel = isSingleSelection ? t('app.ctx_denoise_image') : t('app.ctx_denoise_images');
+    const mergeLabel = t('app.ctx_merge_hdr');
 
     const handleCreateVirtualCopy = async (sourcePath: string) => {
       try {
@@ -4536,7 +4547,7 @@ function App() {
             {
               disabled: !isSingleSelection,
               icon: Edit,
-              label: 'Edit Image',
+              label: t('app.ctx_edit_image'),
               onClick: () => handleImageSelect(finalSelection[0]),
             },
             {
@@ -4557,7 +4568,7 @@ function App() {
       {
         disabled: !isSingleSelection,
         icon: Copy,
-        label: 'Copy Adjustments',
+        label: t('app.ctx_copy_adjustments'),
         onClick: async () => {
           try {
             const metadata: any = await invoke(Invokes.LoadMetadata, { path: finalSelection[0] });
@@ -4586,7 +4597,7 @@ function App() {
         onClick: () => handlePasteAdjustments(finalSelection),
       },
       {
-        label: 'Productivity',
+        label: t('app.ctx_productivity'),
         icon: Gauge,
         submenu: [
           {
@@ -4689,11 +4700,11 @@ function App() {
       },
       {
         icon: CopyPlus,
-        label: 'Duplicate Image',
+        label: t('app.ctx_duplicate_image'),
         disabled: !isSingleSelection,
         submenu: [
           {
-            label: 'Physical Copy',
+            label: t('app.ctx_physical_copy'),
             icon: Copy,
             onClick: async () => {
               try {
@@ -4706,7 +4717,7 @@ function App() {
             },
           },
           {
-            label: 'Virtual Copy',
+            label: t('app.ctx_virtual_copy'),
             icon: CopyPlus,
             onClick: () => handleCreateVirtualCopy(finalSelection[0]),
           },
@@ -4716,17 +4727,17 @@ function App() {
       { type: OPTION_SEPARATOR },
       {
         icon: Star,
-        label: 'Rating',
+        label: t('app.ctx_rating'),
         submenu: [0, 1, 2, 3, 4, 5].map((rating: number) => ({
-          label: rating === 0 ? 'No Rating' : `${rating} Star${rating !== 1 ? 's' : ''}`,
+          label: rating === 0 ? t('app.ctx_no_rating') : rating === 1 ? t('app.ctx_star_one') : t('app.ctx_stars', { count: rating }),
           onClick: () => handleRate(rating, finalSelection),
         })),
       },
       {
-        label: 'Color Label',
+        label: t('app.ctx_color_label'),
         icon: Palette,
         submenu: [
-          { label: 'No Label', onClick: () => handleSetColorLabel(null, finalSelection) },
+          { label: t('app.ctx_no_label'), onClick: () => handleSetColorLabel(null, finalSelection) },
           ...COLOR_LABELS.map((label: Color) => ({
             label: label.name.charAt(0).toUpperCase() + label.name.slice(1),
             color: label.color,
@@ -4735,7 +4746,7 @@ function App() {
         ],
       },
       {
-        label: 'Tagging',
+        label: t('app.ctx_tagging'),
         icon: Tag,
         submenu: [
           {
@@ -4753,7 +4764,7 @@ function App() {
       {
         disabled: !isSingleSelection,
         icon: Folder,
-        label: 'Show in File Explorer',
+        label: t('app.ctx_show_in_explorer'),
         onClick: () => {
           invoke(Invokes.ShowInFinder, { path: finalSelection[0] }).catch((err) =>
             setError(`Could not show file in explorer: ${err}`),
@@ -4829,18 +4840,18 @@ function App() {
     }
     const isRoot = targetPath === rootPath;
     const numCopied = copiedFilePaths.length;
-    const copyPastedLabel = numCopied === 1 ? 'Copy image here' : `Copy ${numCopied} images here`;
-    const movePastedLabel = numCopied === 1 ? 'Move image here' : `Move ${numCopied} images here`;
+    const copyPastedLabel = numCopied === 1 ? t('app.ctx_copy_here_one') : t('app.ctx_copy_here_count', { count: numCopied });
+    const movePastedLabel = numCopied === 1 ? t('app.ctx_move_here_one') : t('app.ctx_move_here_count', { count: numCopied });
 
     const pinOption = isCurrentlyPinned
       ? {
           icon: PinOff,
-          label: 'Unpin Folder',
+          label: t('app.ctx_unpin_folder'),
           onClick: () => handleTogglePinFolder(targetPath),
         }
       : {
           icon: Pin,
-          label: 'Pin Folder',
+          label: t('app.ctx_pin_folder'),
           onClick: () => handleTogglePinFolder(targetPath),
         };
 
@@ -4849,7 +4860,7 @@ function App() {
       { type: OPTION_SEPARATOR },
       {
         icon: FolderPlus,
-        label: 'New Folder',
+        label: t('app.ctx_new_folder'),
         onClick: () => {
           setFolderActionTarget(targetPath);
           setIsCreateFolderModalOpen(true);
@@ -4858,7 +4869,7 @@ function App() {
       {
         disabled: isRoot,
         icon: FileEdit,
-        label: 'Rename Folder',
+        label: t('app.ctx_rename_folder'),
         onClick: () => {
           setFolderActionTarget(targetPath);
           setIsRenameFolderModalOpen(true);
@@ -4868,7 +4879,7 @@ function App() {
       {
         disabled: copiedFilePaths.length === 0,
         icon: ClipboardPaste,
-        label: 'Paste',
+        label: t('app.ctx_paste'),
         submenu: [
           {
             label: copyPastedLabel,
@@ -4897,11 +4908,11 @@ function App() {
           },
         ],
       },
-      { icon: FolderInput, label: 'Import Images', onClick: () => handleImportClick(targetPath) },
+      { icon: FolderInput, label: t('app.ctx_import_images'), onClick: () => handleImportClick(targetPath) },
       { type: OPTION_SEPARATOR },
       {
         icon: Folder,
-        label: 'Show in File Explorer',
+        label: t('app.ctx_show_in_explorer'),
         onClick: () =>
           invoke(Invokes.ShowInFinder, { path: targetPath }).catch((err) => setError(`Could not show folder: ${err}`)),
       },
@@ -4911,11 +4922,11 @@ function App() {
               disabled: isRoot,
               icon: Trash2,
               isDestructive: true,
-              label: 'Delete Folder',
+              label: t('app.ctx_delete_folder'),
               submenu: [
-                { label: 'Cancel', icon: X, onClick: () => {} },
+                { label: t('app.ctx_cancel'), icon: X, onClick: () => {} },
                 {
-                  label: 'Confirm',
+                  label: t('app.ctx_confirm'),
                   icon: Check,
                   isDestructive: true,
                   onClick: async () => {
@@ -4940,18 +4951,18 @@ function App() {
     event.preventDefault();
     event.stopPropagation();
     const numCopied = copiedFilePaths.length;
-    const copyPastedLabel = numCopied === 1 ? 'Copy image here' : `Copy ${numCopied} images here`;
-    const movePastedLabel = numCopied === 1 ? 'Move image here' : `Move ${numCopied} images here`;
+    const copyPastedLabel = numCopied === 1 ? t('app.ctx_copy_here_one') : t('app.ctx_copy_here_count', { count: numCopied });
+    const movePastedLabel = numCopied === 1 ? t('app.ctx_move_here_one') : t('app.ctx_move_here_count', { count: numCopied });
 
     const options = [
       {
-        label: 'Refresh Folder',
+        label: t('app.ctx_refresh_folder'),
         icon: RefreshCw,
         onClick: handleLibraryRefresh,
       },
       { type: OPTION_SEPARATOR },
       {
-        label: 'Paste',
+        label: t('app.ctx_paste'),
         icon: ClipboardPaste,
         disabled: copiedFilePaths.length === 0,
         submenu: [
@@ -4984,7 +4995,7 @@ function App() {
       },
       {
         icon: FolderInput,
-        label: 'Import Images',
+        label: t('app.ctx_import_images'),
         onClick: () => handleImportClick(currentFolderPath as string),
         disabled: !currentFolderPath,
       },
