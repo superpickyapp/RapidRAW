@@ -390,7 +390,13 @@
     "channel_luma": "Luma",
     "channel_red": "Red",
     "channel_green": "Green",
-    "channel_blue": "Blue"
+    "channel_blue": "Blue",
+    "section_basic": "Basic",
+    "section_curves": "Curves",
+    "section_color": "Color",
+    "section_details": "Details",
+    "section_effects": "Effects",
+    "curve_data_unavailable": "Curve data not available."
   },
   "crop": {
     "title": "Crop & Transform",

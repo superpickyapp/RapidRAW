@@ -297,7 +297,7 @@ export default function CurveGraph({
         variant={TextVariants.small}
         className="w-full aspect-square bg-surface-secondary p-1 rounded-md flex items-center justify-center"
       >
-        Curve data not available.
+        {t('adjustments.curve_data_unavailable')}
       </Text>
     );
   }

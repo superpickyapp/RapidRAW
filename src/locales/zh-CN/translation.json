@@ -390,7 +390,13 @@
     "channel_luma": "亮度",
     "channel_red": "红色",
     "channel_green": "绿色",
-    "channel_blue": "蓝色"
+    "channel_blue": "蓝色",
+    "section_basic": "基础",
+    "section_curves": "曲线",
+    "section_color": "色彩",
+    "section_details": "细节",
+    "section_effects": "效果",
+    "curve_data_unavailable": "曲线数据不可用。"
   },
   "crop": {
     "title": "裁剪与变换",

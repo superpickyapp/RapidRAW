@@ -275,7 +275,7 @@ export default function Controls({
             effects: EffectsPanel,
           }[sectionName];
 
-          const title = sectionName.charAt(0).toUpperCase() + sectionName.slice(1);
+          const title = t(`adjustments.section_${sectionName}`, { defaultValue: sectionName.charAt(0).toUpperCase() + sectionName.slice(1) });
           const sectionVisibility = adjustments.sectionVisibility || INITIAL_ADJUSTMENTS.sectionVisibility;
 
           return (
