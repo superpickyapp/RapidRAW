@@ -3,7 +3,6 @@ import { ImageFile, Panel, SelectedImage } from '../components/ui/AppProperties'
 import { BrushSettings } from '../components/ui/AppProperties';
 
 interface KeyboardShortcutsProps {
-  activeAiPatchContainerId?: string | null;
   activeAiSubMaskId: string | null;
   osPlatform: string;
   activeMaskContainerId: string | null;
@@ -15,7 +14,6 @@ interface KeyboardShortcutsProps {
   customEscapeHandler: any;
   handleBackToLibrary(): void;
   handleCopyAdjustments(): void;
-  handleDeleteAiPatch(patchId: string): void;
   handleDeleteMaskContainer(containerId: string): void;
   handleDeleteSelected(): void;
   handleImageSelect(path: string): void;
@@ -56,7 +54,6 @@ interface KeyboardShortcutsProps {
 }
 
 export const useKeyboardShortcuts = ({
-  activeAiPatchContainerId,
   activeAiSubMaskId,
   activeMaskContainerId,
   activeMaskId,
@@ -68,7 +65,6 @@ export const useKeyboardShortcuts = ({
   customEscapeHandler,
   handleBackToLibrary,
   handleCopyAdjustments,
-  handleDeleteAiPatch,
   handleDeleteMaskContainer,
   handleDeleteSelected,
   handleImageSelect,
@@ -132,8 +128,6 @@ export const useKeyboardShortcuts = ({
             customEscapeHandler();
           } else if (activeAiSubMaskId) {
             setActiveAiSubMaskId(null);
-          } else if (activeAiPatchContainerId && onSelectPatchContainer) {
-            onSelectPatchContainer(null);
           } else if (activeMaskId) {
             setActiveMaskId(null);
           } else if (activeMaskContainerId) {
@@ -211,10 +205,6 @@ export const useKeyboardShortcuts = ({
         if (key === 'm' && !isCtrl) {
           event.preventDefault();
           handleRightPanelSelect(Panel.Masks);
-        }
-        if (key === 'k' && !isCtrl) {
-          event.preventDefault();
-          handleRightPanelSelect(Panel.Ai);
         }
         if (key === 'p' && !isCtrl) {
           event.preventDefault();
@@ -355,8 +345,6 @@ export const useKeyboardShortcuts = ({
         event.preventDefault();
         if (activeMaskContainerId) {
           handleDeleteMaskContainer(activeMaskContainerId);
-        } else if (activeAiPatchContainerId) {
-          handleDeleteAiPatch(activeAiPatchContainerId);
         } else if (!isMacOS || isCtrl) {
           // macOS: Cmd modifier required for (destructive) file deletion
           // Other platforms: plain Delete triggers file deletion
@@ -455,7 +443,6 @@ export const useKeyboardShortcuts = ({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [
-    activeAiPatchContainerId,
     activeAiSubMaskId,
     activeMaskContainerId,
     activeMaskId,
@@ -467,7 +454,6 @@ export const useKeyboardShortcuts = ({
     customEscapeHandler,
     handleBackToLibrary,
     handleCopyAdjustments,
-    handleDeleteAiPatch,
     handleDeleteMaskContainer,
     handleDeleteSelected,
     handleImageSelect,

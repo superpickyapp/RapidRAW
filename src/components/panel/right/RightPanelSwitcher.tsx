@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { SlidersHorizontal, Info, Scaling, BrushCleaning, Bookmark, Save, Layers } from 'lucide-react';
+import { SlidersHorizontal, Info, Scaling, Bookmark, Save, Layers } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Panel } from '../../ui/AppProperties';
 
@@ -21,7 +21,6 @@ const panelGroups: Array<Array<PanelOptions>> = [
     { id: Panel.Adjustments, icon: SlidersHorizontal, titleKey: 'app.panel_adjust' },
     { id: Panel.Crop, icon: Scaling, titleKey: 'app.panel_crop' },
     { id: Panel.Masks, icon: Layers, titleKey: 'app.panel_masks' },
-    { id: Panel.Ai, icon: BrushCleaning, titleKey: 'app.panel_inpaint' },
   ],
   [
     { id: Panel.Presets, icon: Bookmark, titleKey: 'app.panel_presets' },

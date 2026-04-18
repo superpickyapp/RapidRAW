@@ -83,15 +83,10 @@ interface MasksPanelProps {
   activeMaskContainerId: string | null;
   activeMaskId: string | null;
   adjustments: Adjustments;
-  aiModelDownloadStatus: string | null;
   appSettings: AppSettings | null;
   brushSettings: BrushSettings | null;
   copiedMask: MaskContainer | null;
   histogram: any;
-  isGeneratingAiMask: boolean;
-  onGenerateAiDepthMask(id: string, parameters: any): void;
-  onGenerateAiForegroundMask(id: string): void;
-  onGenerateAiSkyMask(id: string): void;
   onSelectContainer(id: string | null): void;
   onSelectMask(id: string | null): void;
   selectedImage: SelectedImage;
@@ -549,15 +544,10 @@ export default function MasksPanel({
   activeMaskContainerId,
   activeMaskId,
   adjustments,
-  aiModelDownloadStatus,
   appSettings,
   brushSettings,
   copiedMask,
   histogram,
-  isGeneratingAiMask,
-  onGenerateAiDepthMask,
-  onGenerateAiForegroundMask,
-  onGenerateAiSkyMask,
   onSelectContainer,
   onSelectMask,
   selectedImage,
@@ -605,20 +595,6 @@ export default function MasksPanel({
   const activeSubMaskData = activeContainer?.subMasks.find((sm) => sm.id === activeMaskId);
   const isAiMask =
     activeSubMaskData && [Mask.AiSubject, Mask.AiForeground, Mask.AiSky, Mask.AiDepth].includes(activeSubMaskData.type);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    if (isGeneratingAiMask && isAiMask) {
-      timer = setTimeout(() => {
-        setAnalyzingSubMaskId(activeMaskId);
-      }, 200);
-    } else {
-      setAnalyzingSubMaskId(null);
-    }
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [isGeneratingAiMask, isAiMask, activeMaskId]);
 
   useEffect(() => {
     if (activeMaskContainerId) {
@@ -767,9 +743,6 @@ export default function MasksPanel({
     onSelectContainer(newContainer.id);
     onSelectMask(subMask.id);
     setExpandedContainers((prev) => new Set(prev).add(newContainer.id));
-    if (type === Mask.AiForeground) onGenerateAiForegroundMask(subMask.id);
-    else if (type === Mask.AiSky) onGenerateAiSkyMask(subMask.id);
-    else if (type === Mask.AiDepth) onGenerateAiDepthMask(subMask.id, subMask.parameters);
   };
 
   const handleAddSubMask = (containerId: string, type: Mask, insertIndex: number = -1) => {
@@ -792,9 +765,6 @@ export default function MasksPanel({
     onSelectContainer(containerId);
     onSelectMask(subMask.id);
     setExpandedContainers((prev) => new Set(prev).add(containerId));
-    if (type === Mask.AiForeground) onGenerateAiForegroundMask(subMask.id);
-    else if (type === Mask.AiSky) onGenerateAiSkyMask(subMask.id);
-    else if (type === Mask.AiDepth) onGenerateAiDepthMask(subMask.id, subMask.parameters);
   };
 
   const handleGridClick = (type: Mask, forceNewMaskContainer: boolean = false) => {
@@ -1377,14 +1347,12 @@ export default function MasksPanel({
                 <SettingsPanel
                   container={activeContainer}
                   activeSubMask={activeSubMaskData || null}
-                  aiModelDownloadStatus={aiModelDownloadStatus}
                   brushSettings={brushSettings}
                   setBrushSettings={setBrushSettings}
                   updateContainer={updateContainer}
                   updateSubMask={updateSubMask}
                   histogram={histogram}
                   appSettings={appSettings}
-                  isGeneratingAiMask={isGeneratingAiMask}
                   setIsMaskControlHovered={setIsMaskControlHovered}
                   collapsibleState={collapsibleState}
                   setCollapsibleState={setCollapsibleState}
@@ -1394,7 +1362,6 @@ export default function MasksPanel({
                   isSettingsSectionOpen={isSettingsSectionOpen}
                   setSettingsSectionOpen={setSettingsSectionOpen}
                   presets={presets}
-                  onGenerateAiDepthMask={onGenerateAiDepthMask}
                 />
               </motion.div>
             )}
@@ -2040,14 +2007,12 @@ function SubMaskRow({
 function SettingsPanel({
   container,
   activeSubMask,
-  aiModelDownloadStatus,
   brushSettings,
   setBrushSettings,
   updateContainer,
   updateSubMask,
   histogram,
   appSettings,
-  isGeneratingAiMask: _isGeneratingAiMask,
   setIsMaskControlHovered,
   collapsibleState,
   setCollapsibleState,
@@ -2057,7 +2022,6 @@ function SettingsPanel({
   isSettingsSectionOpen,
   setSettingsSectionOpen,
   presets,
-  onGenerateAiDepthMask,
 }: any) {
   const { t } = useTranslation();
   const { showContextMenu } = useContextMenu();
@@ -2289,22 +2253,6 @@ function SettingsPanel({
 
           {isComponentMode && (
             <>
-              {isAiMask && aiModelDownloadStatus && (
-                <Text
-                  as="div"
-                  variant={TextVariants.small}
-                  color={TextColors.accent}
-                  weight={TextWeights.medium}
-                  className="p-3 bg-card-active rounded-md border border-surface flex items-center gap-3"
-                >
-                  <Loader2 size={16} className="animate-spin shrink-0" />
-                  <div className="leading-relaxed">
-                    <Text variant={TextVariants.small}>{t('masks.ai_model_downloading')} </Text>
-                    <span>{aiModelDownloadStatus}</span>
-                  </div>
-                </Text>
-              )}
-
               {activeSubMask.type === Mask.AiDepth && (
                 <DepthRangePicker
                   minDepth={100 - (activeSubMask.parameters?.maxDepth ?? 100)}

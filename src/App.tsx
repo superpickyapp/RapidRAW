@@ -24,16 +24,12 @@ import {
   Folder,
   FolderInput,
   FolderPlus,
-  Images,
-  LayoutTemplate,
   Redo,
   RefreshCw,
   RotateCcw,
   Star,
   Save,
-  SquaresUnite,
   Palette,
-  Tag,
   Trash2,
   Undo,
   X,
@@ -41,8 +37,6 @@ import {
   PinOff,
   Users,
   Gauge,
-  Grip,
-  Film,
 } from 'lucide-react';
 import TitleBar from './window/TitleBar';
 import CommunityPage from './components/panel/CommunityPage';
@@ -56,29 +50,22 @@ import RightPanelSwitcher from './components/panel/right/RightPanelSwitcher';
 import MetadataPanel from './components/panel/right/MetadataPanel';
 import CropPanel, { type OverlayMode } from './components/panel/right/CropPanel';
 import PresetsPanel from './components/panel/right/PresetsPanel';
-import AIPanel from './components/panel/right/AIPanel';
 import ExportPanel from './components/panel/right/ExportPanel';
 import LibraryExportPanel from './components/panel/right/LibraryExportPanel';
 import MasksPanel from './components/panel/right/MasksPanel';
 import BottomBar from './components/panel/BottomBar';
 import { ContextMenuProvider, useContextMenu } from './context/ContextMenuContext';
-import TaggingSubMenu from './context/TaggingSubMenu';
 import CreateFolderModal from './components/modals/CreateFolderModal';
 import RenameFolderModal from './components/modals/RenameFolderModal';
 import ConfirmModal from './components/modals/ConfirmModal';
 import ImportSettingsModal from './components/modals/ImportSettingsModal';
 import RenameFileModal from './components/modals/RenameFileModal';
-import PanoramaModal from './components/modals/PanoramaModal';
-import NegativeConversionModal from './components/modals/NegativeConversionModal';
-import DenoiseModal from './components/modals/DenoiseModal';
-import CollageModal from './components/modals/CollageModal';
 import CopyPasteSettingsModal from './components/modals/CopyPasteSettingsModal';
 import CullingModal from './components/modals/CullingModal';
 import { useHistoryState } from './hooks/useHistoryState';
 import Resizer from './components/ui/Resizer';
 import {
   Adjustments,
-  AiPatch,
   Color,
   COLOR_LABELS,
   Coord,
@@ -122,7 +109,6 @@ import {
   CullingSuggestions,
 } from './components/ui/AppProperties';
 import { ChannelConfig } from './components/adjustments/Curves';
-import HdrModal from './components/modals/HdrModal';
 
 const CLERK_PUBLISHABLE_KEY = 'pk_test_YnJpZWYtc2Vhc25haWwtMTIuY2xlcmsuYWNjb3VudHMuZGV2JA'; // local dev key
 
@@ -156,45 +142,6 @@ interface MultiSelectOptions {
   shiftAnchor: string | null;
 }
 
-interface CollageModalState {
-  isOpen: boolean;
-  sourceImages: ImageFile[];
-}
-
-interface PanoramaModalState {
-  error: string | null;
-  finalImageBase64: string | null;
-  isOpen: boolean;
-  isProcessing: boolean;
-  progressMessage: string | null;
-  stitchingSourcePaths: Array<string>;
-}
-
-interface HdrModalState {
-  error: string | null;
-  finalImageBase64: string | null;
-  isOpen: boolean;
-  isProcessing: boolean;
-  progressMessage: string | null;
-  stitchingSourcePaths: Array<string>;
-}
-
-interface DenoiseModalState {
-  isOpen: boolean;
-  isProcessing: boolean;
-  previewBase64: string | null;
-  originalBase64?: string | null;
-  error: string | null;
-  targetPaths: string[];
-  progressMessage: string | null;
-  isRaw: boolean;
-}
-
-interface NegativeConversionModalState {
-  isOpen: boolean;
-  targetPaths: Array<string>;
-}
-
 interface CullingModalState {
   isOpen: boolean;
   suggestions: CullingSuggestions | null;
@@ -226,7 +173,6 @@ const RIGHT_PANEL_ORDER = [
   Panel.Adjustments,
   Panel.Crop,
   Panel.Masks,
-  Panel.Ai,
   Panel.Presets,
   Panel.Export,
 ];
@@ -349,7 +295,6 @@ function App() {
   const [slideDirection, setSlideDirection] = useState(1);
   const [activeMaskContainerId, setActiveMaskContainerId] = useState<string | null>(null);
   const [activeMaskId, setActiveMaskId] = useState<string | null>(null);
-  const [activeAiPatchContainerId, setActiveAiPatchContainerId] = useState<string | null>(null);
   const [activeAiSubMaskId, setActiveAiSubMaskId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [displaySize, setDisplaySize] = useState<ImageDimensions>({ width: 0, height: 0 });
@@ -361,7 +306,6 @@ function App() {
   const [overlayMode, setOverlayMode] = useState<OverlayMode>('thirds');
   const [overlayRotation, setOverlayRotation] = useState(0);
   const [transformedOriginalUrl, setTransformedOriginalUrl] = useState<string | null>(null);
-  const patchesSentToBackend = useRef<Set<string>>(new Set());
   const imageCacheRef = useRef(new ImageLRUCache(20));
   const isBackendReadyRef = useRef(true);
   const cachedEditStateRef = useRef<ImageCacheEntry | null>(null);
@@ -414,35 +358,6 @@ function App() {
   const [importSourcePaths, setImportSourcePaths] = useState<Array<string>>([]);
   const [folderActionTarget, setFolderActionTarget] = useState<string | null>(null);
   const [confirmModalState, setConfirmModalState] = useState<ConfirmModalState>({ isOpen: false });
-  const [panoramaModalState, setPanoramaModalState] = useState<PanoramaModalState>({
-    error: null,
-    finalImageBase64: null,
-    isOpen: false,
-    isProcessing: false,
-    progressMessage: '',
-    stitchingSourcePaths: [],
-  });
-  const [hdrModalState, setHdrModalState] = useState<HdrModalState>({
-    error: null,
-    finalImageBase64: null,
-    isOpen: false,
-    isProcessing: false,
-    progressMessage: '',
-    stitchingSourcePaths: [],
-  });
-  const [negativeModalState, setNegativeModalState] = useState<NegativeConversionModalState>({
-    isOpen: false,
-    targetPaths: [],
-  });
-  const [denoiseModalState, setDenoiseModalState] = useState<DenoiseModalState>({
-    isOpen: false,
-    isProcessing: false,
-    previewBase64: null,
-    error: null,
-    targetPaths: [],
-    progressMessage: null,
-    isRaw: false,
-  });
   const [cullingModalState, setCullingModalState] = useState<CullingModalState>({
     isOpen: false,
     suggestions: null,
@@ -450,12 +365,7 @@ function App() {
     error: null,
     pathsToCull: [],
   });
-  const [collageModalState, setCollageModalState] = useState<CollageModalState>({
-    isOpen: false,
-    sourceImages: [],
-  });
   const [customEscapeHandler, setCustomEscapeHandler] = useState(null);
-  const [isGeneratingAiMask, setIsGeneratingAiMask] = useState(false);
   const [isAIConnectorConnected, setisAIConnectorConnected] = useState(false);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [isMaskControlHovered, setIsMaskControlHovered] = useState(false);
@@ -614,13 +524,10 @@ function App() {
   }, [historyAdjustments]);
 
   useEffect(() => {
-    if (
-      (activeRightPanel !== Panel.Masks || !activeMaskContainerId) &&
-      (activeRightPanel !== Panel.Ai || !activeAiPatchContainerId)
-    ) {
+    if (activeRightPanel !== Panel.Masks || !activeMaskContainerId) {
       setIsMaskControlHovered(false);
     }
-  }, [activeRightPanel, activeMaskContainerId, activeAiPatchContainerId]);
+  }, [activeRightPanel, activeMaskContainerId]);
 
   const geometricAdjustmentsKey = useMemo(() => {
     if (!adjustments) return '';
@@ -673,8 +580,7 @@ function App() {
 
   useEffect(() => {
     const activeSubMask =
-      adjustments?.masks?.flatMap((m: any) => m.subMasks).find((sm: any) => sm.id === activeMaskId) ||
-      adjustments?.aiPatches?.flatMap((p: any) => p.subMasks).find((sm: any) => sm.id === activeAiSubMaskId);
+      adjustments?.masks?.flatMap((m: any) => m.subMasks).find((sm: any) => sm.id === activeMaskId);
 
     if (activeSubMask?.type === 'ai-subject' && selectedImage?.path) {
       const transformAdjustments = {
@@ -711,201 +617,8 @@ function App() {
         ...c,
         subMasks: c.subMasks.map((sm: SubMask) => (sm.id === subMaskId ? { ...sm, ...updatedData } : sm)),
       })),
-      aiPatches: (prev.aiPatches || []).map((p: AiPatch) => ({
-        ...p,
-        subMasks: p.subMasks.map((sm: SubMask) => (sm.id === subMaskId ? { ...sm, ...updatedData } : sm)),
-      })),
     }));
   };
-
-  const handleGenerativeReplace = useCallback(
-    async (patchId: string, prompt: string, useFastInpaint: boolean) => {
-      if (!selectedImage?.path || isGeneratingAi) {
-        return;
-      }
-
-      const patch: AiPatch | undefined = adjustments.aiPatches.find((p: AiPatch) => p.id === patchId);
-      if (!patch) {
-        console.error('Could not find AI patch to generate for:', patchId);
-        return;
-      }
-
-      const patchDefinition = { ...patch, prompt };
-
-      setAdjustments((prev: Adjustments) => ({
-        ...prev,
-        aiPatches: prev.aiPatches.map((p: AiPatch) => (p.id === patchId ? { ...p, isLoading: true, prompt } : p)),
-      }));
-
-      setIsGeneratingAi(true);
-
-      try {
-        const newPatchDataJson: any = await invoke(Invokes.InvokeGenerativeReplaseWithMaskDef, {
-          currentAdjustments: adjustments,
-          patchDefinition: patchDefinition,
-          path: selectedImage.path,
-          useFastInpaint: useFastInpaint,
-        });
-
-        const newPatchData = JSON.parse(newPatchDataJson);
-        patchesSentToBackend.current.delete(patchId);
-        setAdjustments((prev: Adjustments) => ({
-          ...prev,
-          aiPatches: prev.aiPatches.map((p: AiPatch) =>
-            p.id === patchId
-              ? {
-                  ...p,
-                  patchData: newPatchData,
-                  isLoading: false,
-                  name: useFastInpaint ? 'Inpaint' : prompt && prompt.trim() ? prompt.trim() : p.name,
-                }
-              : p,
-          ),
-        }));
-        setActiveAiPatchContainerId(null);
-        setActiveAiSubMaskId(null);
-      } catch (err) {
-        console.error('Generative replace failed:', err);
-        setError(`AI Replace Failed: ${err}`);
-        setAdjustments((prev: Adjustments) => ({
-          ...prev,
-          aiPatches: prev.aiPatches.map((p: AiPatch) => (p.id === patchId ? { ...p, isLoading: false } : p)),
-        }));
-      } finally {
-        setIsGeneratingAi(false);
-      }
-    },
-    [
-      selectedImage?.path,
-      isGeneratingAi,
-      adjustments,
-      setAdjustments,
-      setActiveAiPatchContainerId,
-      setActiveAiSubMaskId,
-    ],
-  );
-
-  const handleQuickErase = useCallback(
-    async (subMaskId: string | null, startPoint: Coord, endPoint: Coord) => {
-      if (!selectedImage?.path || isGeneratingAi) {
-        return;
-      }
-
-      const patchId = adjustments.aiPatches.find((p: AiPatch) =>
-        p.subMasks.some((sm: SubMask) => sm.id === subMaskId),
-      )?.id;
-      if (!patchId) {
-        console.error('Could not find AI patch container for Quick Erase.');
-        return;
-      }
-
-      setIsGeneratingAi(true);
-      setAdjustments((prev: Partial<Adjustments>) => ({
-        ...prev,
-        aiPatches: prev.aiPatches?.map((p: AiPatch) => (p.id === patchId ? { ...p, isLoading: true } : p)),
-      }));
-
-      try {
-        const transformAdjustments = {
-          transformDistortion: adjustments.transformDistortion,
-          transformVertical: adjustments.transformVertical,
-          transformHorizontal: adjustments.transformHorizontal,
-          transformRotate: adjustments.transformRotate,
-          transformAspect: adjustments.transformAspect,
-          transformScale: adjustments.transformScale,
-          transformXOffset: adjustments.transformXOffset,
-          transformYOffset: adjustments.transformYOffset,
-          lensDistortionAmount: adjustments.lensDistortionAmount,
-          lensVignetteAmount: adjustments.lensVignetteAmount,
-          lensTcaAmount: adjustments.lensTcaAmount,
-          lensDistortionParams: adjustments.lensDistortionParams,
-          lensMaker: adjustments.lensMaker,
-          lensModel: adjustments.lensModel,
-          lensDistortionEnabled: adjustments.lensDistortionEnabled,
-          lensTcaEnabled: adjustments.lensTcaEnabled,
-          lensVignetteEnabled: adjustments.lensVignetteEnabled,
-        };
-
-        const newMaskParams: any = await invoke(Invokes.GenerateAiSubjectMask, {
-          jsAdjustments: transformAdjustments,
-          endPoint: [endPoint.x, endPoint.y],
-          flipHorizontal: adjustments.flipHorizontal,
-          flipVertical: adjustments.flipVertical,
-          orientationSteps: adjustments.orientationSteps,
-          path: selectedImage.path,
-          rotation: adjustments.rotation,
-          startPoint: [startPoint.x, startPoint.y],
-        });
-
-        const subMaskToUpdate = adjustments.aiPatches
-          ?.find((p: AiPatch) => p.id === patchId)
-          ?.subMasks.find((sm: SubMask) => sm.id === subMaskId);
-        const finalSubMaskParams: any = { ...subMaskToUpdate?.parameters, ...newMaskParams };
-        const updatedAdjustmentsForBackend = {
-          ...adjustments,
-          aiPatches: adjustments.aiPatches.map((p: AiPatch) =>
-            p.id === patchId
-              ? {
-                  ...p,
-                  subMasks: p.subMasks.map((sm: SubMask) =>
-                    sm.id === subMaskId ? { ...sm, parameters: finalSubMaskParams } : sm,
-                  ),
-                }
-              : p,
-          ),
-        };
-
-        const patchDefinitionForBackend = updatedAdjustmentsForBackend.aiPatches.find((p: AiPatch) => p.id === patchId);
-        const newPatchDataJson: any = await invoke(Invokes.InvokeGenerativeReplaseWithMaskDef, {
-          currentAdjustments: updatedAdjustmentsForBackend,
-          patchDefinition: { ...patchDefinitionForBackend, prompt: '' },
-          path: selectedImage.path,
-          useFastInpaint: true,
-        });
-
-        const newPatchData = JSON.parse(newPatchDataJson);
-        if (!newPatchData?.color || !newPatchData?.mask) {
-          throw new Error('Inpainting failed to return a valid result.');
-        }
-        patchesSentToBackend.current.delete(patchId);
-
-        setAdjustments((prev: Partial<Adjustments>) => ({
-          ...prev,
-          aiPatches: prev.aiPatches?.map((p: AiPatch) =>
-            p.id === patchId
-              ? {
-                  ...p,
-                  patchData: newPatchData,
-                  isLoading: false,
-                  subMasks: p.subMasks.map((sm: SubMask) =>
-                    sm.id === subMaskId ? { ...sm, parameters: finalSubMaskParams } : sm,
-                  ),
-                }
-              : p,
-          ),
-        }));
-        setActiveAiPatchContainerId(null);
-        setActiveAiSubMaskId(null);
-      } catch (err: any) {
-        console.error('Quick Erase failed:', err);
-        setError(`Quick Erase Failed: ${err.message || String(err)}`);
-        setAdjustments((prev: Partial<Adjustments>) => ({
-          ...prev,
-          aiPatches: prev.aiPatches?.map((p: AiPatch) => (p.id === patchId ? { ...p, isLoading: false } : p)),
-        }));
-      } finally {
-        setIsGeneratingAi(false);
-      }
-    },
-    [
-      selectedImage?.path,
-      isGeneratingAi,
-      adjustments,
-      setAdjustments,
-      setActiveAiPatchContainerId,
-      setActiveAiSubMaskId,
-    ],
-  );
 
   const handleDeleteMaskContainer = useCallback(
     (containerId: string) => {
@@ -920,235 +633,6 @@ function App() {
     },
     [setAdjustments, activeMaskContainerId],
   );
-
-  const handleDeleteAiPatch = useCallback(
-    (patchId: string) => {
-      setAdjustments((prev: Adjustments) => ({
-        ...prev,
-        aiPatches: (prev.aiPatches || []).filter((p) => p.id !== patchId),
-      }));
-      if (activeAiPatchContainerId === patchId) {
-        setActiveAiPatchContainerId(null);
-        setActiveAiSubMaskId(null);
-      }
-    },
-    [setAdjustments, activeAiPatchContainerId],
-  );
-
-  const handleToggleAiPatchVisibility = useCallback(
-    (patchId: string) => {
-      setAdjustments((prev: Adjustments) => ({
-        ...prev,
-        aiPatches: (prev.aiPatches || []).map((p: AiPatch) => (p.id === patchId ? { ...p, visible: !p.visible } : p)),
-      }));
-    },
-    [setAdjustments],
-  );
-
-  const handleGenerateAiMask = async (subMaskId: string, startPoint: Coord, endPoint: Coord) => {
-    if (!selectedImage?.path) {
-      console.error('Cannot generate AI mask: No image selected.');
-      return;
-    }
-    setIsGeneratingAiMask(true);
-    try {
-      const transformAdjustments = {
-        transformDistortion: adjustments.transformDistortion,
-        transformVertical: adjustments.transformVertical,
-        transformHorizontal: adjustments.transformHorizontal,
-        transformRotate: adjustments.transformRotate,
-        transformAspect: adjustments.transformAspect,
-        transformScale: adjustments.transformScale,
-        transformXOffset: adjustments.transformXOffset,
-        transformYOffset: adjustments.transformYOffset,
-        lensDistortionAmount: adjustments.lensDistortionAmount,
-        lensVignetteAmount: adjustments.lensVignetteAmount,
-        lensTcaAmount: adjustments.lensTcaAmount,
-        lensDistortionParams: adjustments.lensDistortionParams,
-        lensMaker: adjustments.lensMaker,
-        lensModel: adjustments.lensModel,
-        lensDistortionEnabled: adjustments.lensDistortionEnabled,
-        lensTcaEnabled: adjustments.lensTcaEnabled,
-        lensVignetteEnabled: adjustments.lensVignetteEnabled,
-      };
-      const newParameters = await invoke(Invokes.GenerateAiSubjectMask, {
-        jsAdjustments: transformAdjustments,
-        endPoint: [endPoint.x, endPoint.y],
-        flipHorizontal: adjustments.flipHorizontal,
-        flipVertical: adjustments.flipVertical,
-        orientationSteps: adjustments.orientationSteps,
-        path: selectedImage.path,
-        rotation: adjustments.rotation,
-        startPoint: [startPoint.x, startPoint.y],
-      });
-
-      const subMask = adjustments.aiPatches
-        ?.flatMap((p: AiPatch) => p.subMasks)
-        .find((sm: SubMask) => sm.id === subMaskId);
-
-      const mergedParameters = { ...(subMask?.parameters || {}), ...newParameters };
-      patchesSentToBackend.current.delete(subMaskId);
-      updateSubMask(subMaskId, { parameters: mergedParameters });
-    } catch (error) {
-      console.error('Failed to generate AI subject mask:', error);
-      setError(`AI Mask Failed: ${error}`);
-    } finally {
-      setIsGeneratingAiMask(false);
-    }
-  };
-
-  const handleGenerateAiDepthMask = async (subMaskId: string, parameters: any) => {
-    if (!selectedImage?.path) return;
-    console.log('trying to generate depth map');
-    setIsGeneratingAiMask(true);
-
-    try {
-      const transformAdjustments = {
-        transformDistortion: adjustments.transformDistortion,
-        transformVertical: adjustments.transformVertical,
-        transformHorizontal: adjustments.transformHorizontal,
-        transformRotate: adjustments.transformRotate,
-        transformAspect: adjustments.transformAspect,
-        transformScale: adjustments.transformScale,
-        transformXOffset: adjustments.transformXOffset,
-        transformYOffset: adjustments.transformYOffset,
-        lensDistortionAmount: adjustments.lensDistortionAmount,
-        lensVignetteAmount: adjustments.lensVignetteAmount,
-        lensTcaAmount: adjustments.lensTcaAmount,
-        lensDistortionParams: adjustments.lensDistortionParams,
-        lensMaker: adjustments.lensMaker,
-        lensModel: adjustments.lensModel,
-        lensDistortionEnabled: adjustments.lensDistortionEnabled,
-        lensTcaEnabled: adjustments.lensTcaEnabled,
-        lensVignetteEnabled: adjustments.lensVignetteEnabled,
-      };
-
-      const newParameters = await invoke('generate_ai_depth_mask', {
-        jsAdjustments: transformAdjustments,
-        path: selectedImage.path,
-        minDepth: parameters.minDepth ?? 20,
-        maxDepth: parameters.maxDepth ?? 100,
-        minFade: parameters.minFade ?? 15,
-        maxFade: parameters.maxFade ?? 15,
-        feather: parameters.feather ?? 10,
-        flipHorizontal: adjustments.flipHorizontal,
-        flipVertical: adjustments.flipVertical,
-        orientationSteps: adjustments.orientationSteps,
-        rotation: adjustments.rotation,
-      });
-
-      const subMask = adjustments.aiPatches
-        ?.flatMap((p: AiPatch) => p.subMasks)
-        .find((sm: SubMask) => sm.id === subMaskId);
-
-      const mergedParameters = { ...(subMask?.parameters || {}), ...newParameters };
-      patchesSentToBackend.current.delete(subMaskId);
-      updateSubMask(subMaskId, { parameters: mergedParameters });
-    } catch (error) {
-      console.error('Failed to generate AI depth mask:', error);
-      setError(`AI Depth Mask Failed: ${error}`);
-    } finally {
-      setIsGeneratingAiMask(false);
-    }
-  };
-
-  const handleGenerateAiForegroundMask = async (subMaskId: string) => {
-    if (!selectedImage?.path) {
-      console.error('Cannot generate AI mask: No image selected.');
-      return;
-    }
-    setIsGeneratingAiMask(true);
-    try {
-      const transformAdjustments = {
-        transformDistortion: adjustments.transformDistortion,
-        transformVertical: adjustments.transformVertical,
-        transformHorizontal: adjustments.transformHorizontal,
-        transformRotate: adjustments.transformRotate,
-        transformAspect: adjustments.transformAspect,
-        transformScale: adjustments.transformScale,
-        transformXOffset: adjustments.transformXOffset,
-        transformYOffset: adjustments.transformYOffset,
-        lensDistortionAmount: adjustments.lensDistortionAmount,
-        lensVignetteAmount: adjustments.lensVignetteAmount,
-        lensTcaAmount: adjustments.lensTcaAmount,
-        lensDistortionParams: adjustments.lensDistortionParams,
-        lensMaker: adjustments.lensMaker,
-        lensModel: adjustments.lensModel,
-        lensDistortionEnabled: adjustments.lensDistortionEnabled,
-        lensTcaEnabled: adjustments.lensTcaEnabled,
-        lensVignetteEnabled: adjustments.lensVignetteEnabled,
-      };
-      const newParameters = await invoke(Invokes.GenerateAiForegroundMask, {
-        jsAdjustments: transformAdjustments,
-        flipHorizontal: adjustments.flipHorizontal,
-        flipVertical: adjustments.flipVertical,
-        orientationSteps: adjustments.orientationSteps,
-        rotation: adjustments.rotation,
-      });
-
-      const subMask = adjustments.aiPatches
-        ?.flatMap((p: AiPatch) => p.subMasks)
-        .find((sm: SubMask) => sm.id === subMaskId);
-
-      const mergedParameters = { ...(subMask?.parameters || {}), ...newParameters };
-      patchesSentToBackend.current.delete(subMaskId);
-      updateSubMask(subMaskId, { parameters: mergedParameters });
-    } catch (error) {
-      console.error('Failed to generate AI foreground mask:', error);
-      setError(`AI Mask Failed: ${error}`);
-    } finally {
-      setIsGeneratingAiMask(false);
-    }
-  };
-
-  const handleGenerateAiSkyMask = async (subMaskId: string) => {
-    if (!selectedImage?.path) {
-      console.error('Cannot generate AI mask: No image selected.');
-      return;
-    }
-    setIsGeneratingAiMask(true);
-    try {
-      const transformAdjustments = {
-        transformDistortion: adjustments.transformDistortion,
-        transformVertical: adjustments.transformVertical,
-        transformHorizontal: adjustments.transformHorizontal,
-        transformRotate: adjustments.transformRotate,
-        transformAspect: adjustments.transformAspect,
-        transformScale: adjustments.transformScale,
-        transformXOffset: adjustments.transformXOffset,
-        transformYOffset: adjustments.transformYOffset,
-        lensDistortionAmount: adjustments.lensDistortionAmount,
-        lensVignetteAmount: adjustments.lensVignetteAmount,
-        lensTcaAmount: adjustments.lensTcaAmount,
-        lensDistortionParams: adjustments.lensDistortionParams,
-        lensMaker: adjustments.lensMaker,
-        lensModel: adjustments.lensModel,
-        lensDistortionEnabled: adjustments.lensDistortionEnabled,
-        lensTcaEnabled: adjustments.lensTcaEnabled,
-        lensVignetteEnabled: adjustments.lensVignetteEnabled,
-      };
-      const newParameters = await invoke(Invokes.GenerateAiSkyMask, {
-        jsAdjustments: transformAdjustments,
-        flipHorizontal: adjustments.flipHorizontal,
-        flipVertical: adjustments.flipVertical,
-        orientationSteps: adjustments.orientationSteps,
-        rotation: adjustments.rotation,
-      });
-
-      const subMask = adjustments.aiPatches
-        ?.flatMap((p: AiPatch) => p.subMasks)
-        .find((sm: SubMask) => sm.id === subMaskId);
-
-      const mergedParameters = { ...(subMask?.parameters || {}), ...newParameters };
-      patchesSentToBackend.current.delete(subMaskId);
-      updateSubMask(subMaskId, { parameters: mergedParameters });
-    } catch (error) {
-      console.error('Failed to generate AI sky mask:', error);
-      setError(`AI Mask Failed: ${error}`);
-    } finally {
-      setIsGeneratingAiMask(false);
-    }
-  };
 
   const sortedImageList = useMemo(() => {
     let processedList = imageList;
@@ -1488,51 +972,6 @@ function App() {
       const currentPath = selectedImage.path;
 
       const payload = JSON.parse(JSON.stringify(currentAdjustments));
-
-      const processSubMasks = (subMasks: any[]) => {
-        if (!Array.isArray(subMasks)) return;
-        subMasks.forEach((sm: any) => {
-          if (sm.id && sm.parameters) {
-            const keys = ['mask_data_base64', 'maskDataBase64'];
-            let foundMaskData = false;
-
-            for (const key of keys) {
-              if (sm.parameters[key] !== undefined && sm.parameters[key] !== null) {
-                foundMaskData = true;
-                if (patchesSentToBackend.current.has(sm.id)) {
-                  sm.parameters[key] = null;
-                }
-              }
-            }
-            if (foundMaskData && !patchesSentToBackend.current.has(sm.id)) {
-              patchesSentToBackend.current.add(sm.id);
-            }
-          }
-        });
-      };
-
-      if (payload.aiPatches && Array.isArray(payload.aiPatches)) {
-        payload.aiPatches.forEach((p: any) => {
-          if (p.id && p.patchData && !p.isLoading) {
-            if (patchesSentToBackend.current.has(p.id)) {
-              p.patchData = null;
-            } else {
-              patchesSentToBackend.current.add(p.id);
-            }
-          }
-          if (p.subMasks) {
-            processSubMasks(p.subMasks);
-          }
-        });
-      }
-
-      if (payload.masks && Array.isArray(payload.masks)) {
-        payload.masks.forEach((container: any) => {
-          if (container.subMasks) {
-            processSubMasks(container.subMasks);
-          }
-        });
-      }
 
       const jobId = ++previewJobIdRef.current;
       const roi = calculateROI();
@@ -2382,7 +1821,6 @@ function App() {
     setWaveform(null);
     setActiveMaskId(null);
     setActiveMaskContainerId(null);
-    setActiveAiPatchContainerId(null);
     setIsWbPickerActive(false);
     setActiveAiSubMaskId(null);
     setLibraryActivePath(lastActivePath);
@@ -2407,8 +1845,6 @@ function App() {
         imageCacheRef.current.set(selectedImage.path, cachedEditStateRef.current);
       }
 
-      patchesSentToBackend.current.clear();
-
       setMultiSelectedPaths([path]);
       setLibraryActivePath(null);
       setSelectionAnchorPath(path);
@@ -2416,7 +1852,6 @@ function App() {
       setShowOriginal(false);
       setActiveMaskId(null);
       setActiveMaskContainerId(null);
-      setActiveAiPatchContainerId(null);
       setActiveAiSubMaskId(null);
       setIsWbPickerActive(false);
       setTransformedOriginalUrl(null);
@@ -3184,16 +2619,11 @@ function App() {
     isImportModalOpen ||
     isCopyPasteSettingsModalOpen ||
     confirmModalState.isOpen ||
-    panoramaModalState.isOpen ||
-    cullingModalState.isOpen ||
-    collageModalState.isOpen ||
-    denoiseModalState.isOpen ||
-    negativeModalState.isOpen;
+    cullingModalState.isOpen;
 
   useKeyboardShortcuts({
     isModalOpen: isAnyModalOpen,
     osPlatform,
-    activeAiPatchContainerId,
     activeAiSubMaskId,
     activeMaskContainerId,
     activeMaskId,
@@ -3204,7 +2634,6 @@ function App() {
     customEscapeHandler,
     handleBackToLibrary,
     handleCopyAdjustments,
-    handleDeleteAiPatch,
     handleDeleteMaskContainer,
     handleDeleteSelected,
     handleImageSelect,
@@ -3396,35 +2825,6 @@ function App() {
           }));
         }
       }),
-      listen('denoise-progress', (event: any) => {
-        if (isEffectActive) {
-          setDenoiseModalState((prev) => ({ ...prev, progressMessage: event.payload as string }));
-        }
-      }),
-      listen('denoise-complete', (event: any) => {
-        if (isEffectActive) {
-          const payload = event.payload;
-          const isObject = typeof payload === 'object' && payload !== null;
-
-          setDenoiseModalState((prev) => ({
-            ...prev,
-            isProcessing: false,
-            previewBase64: isObject ? payload.denoised : payload,
-            originalBase64: isObject ? payload.original : null,
-            progressMessage: null,
-          }));
-        }
-      }),
-      listen('denoise-error', (event: any) => {
-        if (isEffectActive) {
-          setDenoiseModalState((prev) => ({
-            ...prev,
-            isProcessing: false,
-            error: String(event.payload),
-            progressMessage: null,
-          }));
-        }
-      }),
     ];
     return () => {
       isEffectActive = false;
@@ -3476,102 +2876,6 @@ function App() {
   useEffect(() => {
     let isEffectActive = true;
 
-    const unlistenProgress = listen('panorama-progress', (event: any) => {
-      if (isEffectActive) {
-        setPanoramaModalState((prev: PanoramaModalState) => {
-          if (prev.finalImageBase64 || prev.error) return prev;
-          return {
-            ...prev,
-            progressMessage: event.payload,
-          };
-        });
-      }
-    });
-
-    const unlistenComplete = listen('panorama-complete', (event: any) => {
-      if (isEffectActive) {
-        const { base64 } = event.payload;
-        setPanoramaModalState((prev: PanoramaModalState) => ({
-          ...prev,
-          error: null,
-          finalImageBase64: base64,
-          isProcessing: false,
-          progressMessage: null,
-        }));
-      }
-    });
-
-    const unlistenError = listen('panorama-error', (event: any) => {
-      if (isEffectActive) {
-        setPanoramaModalState((prev: PanoramaModalState) => ({
-          ...prev,
-          error: String(event.payload),
-          finalImageBase64: null,
-          isProcessing: false,
-          progressMessage: null,
-        }));
-      }
-    });
-
-    return () => {
-      isEffectActive = false;
-      unlistenProgress.then((f: any) => f());
-      unlistenComplete.then((f: any) => f());
-      unlistenError.then((f: any) => f());
-    };
-  }, []);
-
-  useEffect(() => {
-    let isEffectActive = true;
-
-    const unlistenProgress = listen('hdr-progress', (event: any) => {
-      if (isEffectActive) {
-        setHdrModalState((prev: HdrModalState) => ({
-          ...prev,
-          error: null,
-          finalImageBase64: null,
-          isOpen: true,
-          progressMessage: event.payload,
-        }));
-      }
-    });
-
-    const unlistenComplete = listen('hdr-complete', (event: any) => {
-      if (isEffectActive) {
-        const { base64 } = event.payload;
-        setHdrModalState((prev: HdrModalState) => ({
-          ...prev,
-          error: null,
-          finalImageBase64: base64,
-          isProcessing: false,
-          progressMessage: 'Hdr Ready',
-        }));
-      }
-    });
-
-    const unlistenError = listen('hdr-error', (event: any) => {
-      if (isEffectActive) {
-        setHdrModalState((prev: HdrModalState) => ({
-          ...prev,
-          error: String(event.payload),
-          finalImageBase64: null,
-          isProcessing: false,
-          progressMessage: 'An error occurred.',
-        }));
-      }
-    });
-
-    return () => {
-      isEffectActive = false;
-      unlistenProgress.then((f: any) => f());
-      unlistenComplete.then((f: any) => f());
-      unlistenError.then((f: any) => f());
-    };
-  }, []);
-
-  useEffect(() => {
-    let isEffectActive = true;
-
     const unlistenStart = listen('culling-start', (event: any) => {
       if (isEffectActive) {
         setCullingModalState({
@@ -3609,153 +2913,6 @@ function App() {
       unlistenError.then((f) => f());
     };
   }, []);
-
-  const handleStartPanorama = (paths: string[]) => {
-    setPanoramaModalState((prev: PanoramaModalState) => ({
-      ...prev,
-      isProcessing: true,
-      error: null,
-      finalImageBase64: null,
-      progressMessage: 'Starting panorama process...',
-    }));
-    invoke(Invokes.StitchPanorama, { paths }).catch((err) => {
-      setPanoramaModalState((prev: PanoramaModalState) => ({
-        ...prev,
-        isProcessing: false,
-        error: String(err),
-      }));
-    });
-  };
-
-  const handleSavePanorama = async (): Promise<string> => {
-    if (panoramaModalState.stitchingSourcePaths.length === 0) {
-      const err = 'Source paths for panorama not found.';
-      setPanoramaModalState((prev: PanoramaModalState) => ({ ...prev, error: err }));
-      throw new Error(err);
-    }
-
-    try {
-      const savedPath: string = await invoke(Invokes.SavePanorama, {
-        firstPathStr: panoramaModalState.stitchingSourcePaths[0],
-      });
-      await refreshImageList();
-      return savedPath;
-    } catch (err) {
-      console.error('Failed to save panorama:', err);
-      setPanoramaModalState((prev: PanoramaModalState) => ({ ...prev, error: String(err) }));
-      throw err;
-    }
-  };
-
-  const handleStartHdr = (paths: string[]) => {
-    setHdrModalState((prev: HdrModalState) => ({
-      ...prev,
-      isProcessing: true,
-      error: null,
-      finalImageBase64: null,
-      progressMessage: 'Starting HDR process...',
-    }));
-    invoke(Invokes.MergeHdr, { paths }).catch((err) => {
-      setHdrModalState((prev: HdrModalState) => ({
-        ...prev,
-        isProcessing: false,
-        error: String(err),
-      }));
-    });
-  };
-
-  const handleSaveHdr = async (): Promise<string> => {
-    if (hdrModalState.stitchingSourcePaths.length === 0) {
-      const err = 'Source paths for HDR not found.';
-      setHdrModalState((prev: HdrModalState) => ({ ...prev, error: err }));
-      throw new Error(err);
-    }
-
-    try {
-      const savedPath: string = await invoke(Invokes.SaveHdr, {
-        firstPathStr: hdrModalState.stitchingSourcePaths[0],
-      });
-      await refreshImageList();
-      return savedPath;
-    } catch (err) {
-      console.error('Failed to save HDR image:', err);
-      setHdrModalState((prev: HdrModalState) => ({ ...prev, error: String(err) }));
-      throw err;
-    }
-  };
-
-  const handleApplyDenoise = useCallback(
-    async (intensity: number, method: 'ai' | 'bm3d') => {
-      if (denoiseModalState.targetPaths.length === 0) return;
-
-      setDenoiseModalState((prev) => ({
-        ...prev,
-        isProcessing: true,
-        error: null,
-        progressMessage: 'Starting engine...',
-      }));
-
-      try {
-        await invoke(Invokes.ApplyDenoising, {
-          path: denoiseModalState.targetPaths[0],
-          intensity: intensity,
-          method: method,
-        });
-      } catch (err) {
-        setDenoiseModalState((prev) => ({
-          ...prev,
-          isProcessing: false,
-          error: String(err),
-        }));
-      }
-    },
-    [denoiseModalState.targetPaths],
-  );
-
-  const handleBatchDenoise = useCallback(
-    async (intensity: number, method: 'ai' | 'bm3d', paths: string[]) => {
-      try {
-        const savedPaths: string[] = await invoke('batch_denoise_images', {
-          paths,
-          intensity,
-          method,
-        });
-        await refreshImageList();
-        return savedPaths;
-      } catch (err) {
-        setDenoiseModalState((prev) => ({
-          ...prev,
-          error: String(err),
-        }));
-        throw err;
-      }
-    },
-    [refreshImageList],
-  );
-
-  const handleSaveDenoisedImage = async (): Promise<string> => {
-    if (denoiseModalState.targetPaths.length === 0) throw new Error('No target path');
-    const savedPath = await invoke<string>(Invokes.SaveDenoisedImage, {
-      originalPathStr: denoiseModalState.targetPaths[0],
-    });
-    await refreshImageList();
-    return savedPath;
-  };
-
-  const handleSaveCollage = async (base64Data: string, firstPath: string): Promise<string> => {
-    try {
-      const savedPath: string = await invoke(Invokes.SaveCollage, {
-        base64Data,
-        firstPathStr: firstPath,
-      });
-      await refreshImageList();
-      return savedPath;
-    } catch (err) {
-      console.error('Failed to save collage:', err);
-      setError(`Failed to save collage: ${err}`);
-      throw err;
-    }
-  };
 
   const handleOpenFolder = async () => {
     try {
@@ -4245,8 +3402,6 @@ function App() {
       }
     };
 
-    const commonTags = getCommonTags([selectedImage.path]);
-
     const options: Array<Option> = [
       {
         label: t('app.ctx_export_image'),
@@ -4278,53 +3433,6 @@ function App() {
             disabled: !selectedImage?.isReady,
           },
           {
-            label: t('app.ctx_denoise_image'),
-            icon: Grip,
-            onClick: () => {
-              setDenoiseModalState({
-                isOpen: true,
-                isProcessing: false,
-                previewBase64: null,
-                error: null,
-                targetPaths: [selectedImage.path],
-                progressMessage: null,
-                isRaw: selectedImage?.isRaw,
-              });
-            },
-          },
-          {
-            label: t('app.ctx_convert_negative'),
-            icon: Film,
-            onClick: () => {
-              if (selectedImage) {
-                setNegativeModalState({
-                  isOpen: true,
-                  targetPaths: [selectedImage.path],
-                });
-              }
-            },
-          },
-          {
-            disabled: true,
-            icon: SquaresUnite,
-            label: t('app.ctx_stitch_panorama'),
-          },
-          {
-            disabled: true,
-            icon: Images,
-            label: t('app.ctx_merge_hdr'),
-          },
-          {
-            icon: LayoutTemplate,
-            label: t('app.ctx_frame_image'),
-            onClick: () => {
-              setCollageModalState({
-                isOpen: true,
-                sourceImages: [selectedImage],
-              });
-            },
-          },
-          {
             label: t('app.ctx_cull_image'),
             icon: Users,
             disabled: true,
@@ -4350,21 +3458,6 @@ function App() {
             color: label.color,
             onClick: () => handleSetColorLabel(label.name),
           })),
-        ],
-      },
-      {
-        label: t('app.ctx_tagging'),
-        icon: Tag,
-        submenu: [
-          {
-            customComponent: TaggingSubMenu,
-            customProps: {
-              paths: [selectedImage.path],
-              initialTags: commonTags,
-              onTagsChanged: handleTagsChanged,
-              appSettings,
-            },
-          },
         ],
       },
       { type: OPTION_SEPARATOR },
@@ -4406,8 +3499,6 @@ function App() {
     } else {
       finalSelection = multiSelectedPaths;
     }
-
-    const commonTags = getCommonTags(finalSelection);
 
     const selectionCount = finalSelection.length;
     const isSingleSelection = selectionCount === 1;
@@ -4479,11 +3570,6 @@ function App() {
     const autoAdjustLabel = isSingleSelection ? t('app.ctx_auto_adjust') : t('app.ctx_auto_adjust_images');
     const renameLabel = isSingleSelection ? t('app.ctx_rename_image') : t('app.ctx_rename_images', { count: selectionCount });
     const cullLabel = isSingleSelection ? t('app.ctx_cull_image') : t('app.ctx_cull_images');
-    const collageLabel = isSingleSelection ? t('app.ctx_frame_image') : t('app.ctx_create_collage');
-    const stitchLabel = t('app.ctx_stitch_panorama');
-    const conversionLabel = isSingleSelection ? t('app.ctx_convert_negative') : t('app.ctx_convert_negatives');
-    const denoiseLabel = isSingleSelection ? t('app.ctx_denoise_image') : t('app.ctx_denoise_images');
-    const mergeLabel = t('app.ctx_merge_hdr');
 
     const handleCreateVirtualCopy = async (sourcePath: string) => {
       try {
@@ -4606,75 +3692,6 @@ function App() {
             onClick: handleApplyAutoAdjustmentsToSelection,
           },
           {
-            label: denoiseLabel,
-            icon: Grip,
-            disabled: finalSelection.length === 0,
-            onClick: () => {
-              setDenoiseModalState({
-                isOpen: true,
-                isProcessing: false,
-                previewBase64: null,
-                error: null,
-                targetPaths: finalSelection,
-                progressMessage: null,
-                isRaw: selectedImage?.isRaw || false,
-              });
-            },
-          },
-          {
-            label: conversionLabel,
-            icon: Film,
-            disabled: selectionCount === 0,
-            onClick: () => {
-              setNegativeModalState({
-                isOpen: true,
-                targetPaths: finalSelection,
-              });
-            },
-          },
-          {
-            disabled: selectionCount < 2 || selectionCount > 30,
-            icon: SquaresUnite,
-            label: stitchLabel,
-            onClick: () => {
-              setPanoramaModalState({
-                error: null,
-                finalImageBase64: null,
-                isOpen: true,
-                isProcessing: false,
-                progressMessage: null,
-                stitchingSourcePaths: finalSelection,
-              });
-            },
-          },
-          {
-            disabled: selectionCount < 2 || selectionCount > 9,
-            icon: Images,
-            label: mergeLabel,
-            onClick: () => {
-              setHdrModalState({
-                error: null,
-                finalImageBase64: null,
-                isOpen: true,
-                isProcessing: false,
-                progressMessage: null,
-                stitchingSourcePaths: finalSelection,
-              });
-            },
-          },
-          {
-            icon: LayoutTemplate,
-            label: collageLabel,
-            onClick: () => {
-              const imagesForCollage = imageList.filter((img) => finalSelection.includes(img.path));
-              setCollageModalState({
-                isOpen: true,
-                sourceImages: imagesForCollage,
-              });
-            },
-            disabled: selectionCount === 0 || selectionCount > 9,
-          },
-          {
             label: cullLabel,
             icon: Users,
             onClick: () =>
@@ -4743,21 +3760,6 @@ function App() {
             color: label.color,
             onClick: () => handleSetColorLabel(label.name, finalSelection),
           })),
-        ],
-      },
-      {
-        label: t('app.ctx_tagging'),
-        icon: Tag,
-        submenu: [
-          {
-            customComponent: TaggingSubMenu,
-            customProps: {
-              paths: finalSelection,
-              initialTags: commonTags,
-              onTagsChanged: handleTagsChanged,
-              appSettings,
-            },
-          },
         ],
       },
       { type: OPTION_SEPARATOR },
@@ -5152,7 +4154,6 @@ function App() {
         <div className="flex flex-row grow h-full min-h-0">
           <div className="flex-1 flex flex-col min-w-0">
             <Editor
-              activeAiPatchContainerId={activeAiPatchContainerId}
               activeAiSubMaskId={activeAiSubMaskId}
               activeMaskContainerId={activeMaskContainerId}
               activeMaskId={activeMaskId}
@@ -5170,10 +4171,7 @@ function App() {
               isStraightenActive={isStraightenActive}
               onBackToLibrary={handleBackToLibrary}
               onContextMenu={handleEditorContextMenu}
-              onGenerateAiMask={handleGenerateAiMask}
-              onQuickErase={handleQuickErase}
               onRedo={redo}
-              onSelectAiSubMask={setActiveAiSubMaskId}
               onSelectMask={setActiveMaskId}
               onStraighten={handleStraighten}
               onToggleFullScreen={handleToggleFullScreen}
@@ -5346,15 +4344,10 @@ function App() {
                             activeMaskContainerId={activeMaskContainerId}
                             activeMaskId={activeMaskId}
                             adjustments={adjustments}
-                            aiModelDownloadStatus={aiModelDownloadStatus}
                             appSettings={appSettings}
                             brushSettings={brushSettings}
                             copiedMask={copiedMask}
                             histogram={histogram}
-                            isGeneratingAiMask={isGeneratingAiMask}
-                            onGenerateAiDepthMask={handleGenerateAiDepthMask}
-                            onGenerateAiForegroundMask={handleGenerateAiForegroundMask}
-                            onGenerateAiSkyMask={handleGenerateAiSkyMask}
                             onSelectContainer={setActiveMaskContainerId}
                             onSelectMask={setActiveMaskId}
                             selectedImage={selectedImage}
@@ -5395,28 +4388,6 @@ function App() {
                             appSettings={appSettings}
                             onSettingsChange={handleSettingsChange}
                             rootPath={rootPath}
-                          />
-                        )}
-                        {renderedRightPanel === Panel.Ai && (
-                          <AIPanel
-                            activePatchContainerId={activeAiPatchContainerId}
-                            activeSubMaskId={activeAiSubMaskId}
-                            adjustments={adjustments}
-                            aiModelDownloadStatus={aiModelDownloadStatus}
-                            brushSettings={brushSettings}
-                            isAIConnectorConnected={isAIConnectorConnected}
-                            isGeneratingAi={isGeneratingAi}
-                            isGeneratingAiMask={isGeneratingAiMask}
-                            onDeletePatch={handleDeleteAiPatch}
-                            onGenerateAiForegroundMask={handleGenerateAiForegroundMask}
-                            onGenerativeReplace={handleGenerativeReplace}
-                            onSelectPatchContainer={setActiveAiPatchContainerId}
-                            onSelectSubMask={setActiveAiSubMaskId}
-                            onTogglePatchVisibility={handleToggleAiPatchVisibility}
-                            selectedImage={selectedImage}
-                            setAdjustments={setAdjustments}
-                            setBrushSettings={setBrushSettings}
-                            setCustomEscapeHandler={setCustomEscapeHandler}
                           />
                         )}
                       </motion.div>
@@ -5512,98 +4483,6 @@ function App() {
           handleSettingsChange({ ...appSettings, copyPasteSettings: newSettings } as AppSettings)
         }
       />
-      <PanoramaModal
-        error={panoramaModalState.error}
-        finalImageBase64={panoramaModalState.finalImageBase64}
-        imageCount={panoramaModalState.stitchingSourcePaths.length}
-        isOpen={panoramaModalState.isOpen}
-        isProcessing={panoramaModalState.isProcessing}
-        loadingImageUrl={
-          panoramaModalState.stitchingSourcePaths.length > 0
-            ? thumbnails[
-                panoramaModalState.stitchingSourcePaths[Math.floor(panoramaModalState.stitchingSourcePaths.length / 2)]
-              ] || null
-            : null
-        }
-        onClose={() =>
-          setPanoramaModalState({
-            isOpen: false,
-            isProcessing: false,
-            progressMessage: '',
-            finalImageBase64: null,
-            error: null,
-            stitchingSourcePaths: [],
-          })
-        }
-        onOpenFile={(path: string) => handleImageSelect(path)}
-        onSave={handleSavePanorama}
-        onStitch={() => handleStartPanorama(panoramaModalState.stitchingSourcePaths)}
-        progressMessage={panoramaModalState.progressMessage}
-      />
-      <HdrModal
-        error={hdrModalState.error}
-        finalImageBase64={hdrModalState.finalImageBase64}
-        imageCount={hdrModalState.stitchingSourcePaths.length}
-        isOpen={hdrModalState.isOpen}
-        isProcessing={hdrModalState.isProcessing}
-        loadingImageUrl={
-          hdrModalState.stitchingSourcePaths.length > 0
-            ? thumbnails[
-                hdrModalState.stitchingSourcePaths[Math.floor(hdrModalState.stitchingSourcePaths.length / 2)]
-              ] || null
-            : null
-        }
-        onClose={() =>
-          setHdrModalState({
-            isOpen: false,
-            isProcessing: false,
-            progressMessage: '',
-            finalImageBase64: null,
-            error: null,
-            stitchingSourcePaths: [],
-          })
-        }
-        onOpenFile={(path: string) => {
-          handleImageSelect(path);
-        }}
-        onSave={handleSaveHdr}
-        onMerge={() => handleStartHdr(hdrModalState.stitchingSourcePaths)}
-        progressMessage={hdrModalState.progressMessage}
-      />
-      <NegativeConversionModal
-        isOpen={negativeModalState.isOpen}
-        onClose={() => setNegativeModalState((prev) => ({ ...prev, isOpen: false }))}
-        targetPaths={negativeModalState.targetPaths}
-        onSave={(savedPaths) => {
-          refreshImageList().then(() => {
-            if (selectedImage && negativeModalState.targetPaths.includes(selectedImage.path) && savedPaths.length > 0) {
-              handleImageSelect(savedPaths[0]);
-            }
-          });
-        }}
-      />
-      <DenoiseModal
-        isOpen={denoiseModalState.isOpen}
-        onClose={() => setDenoiseModalState((prev) => ({ ...prev, isOpen: false }))}
-        onDenoise={handleApplyDenoise}
-        onBatchDenoise={handleBatchDenoise}
-        onSave={handleSaveDenoisedImage}
-        onOpenFile={handleImageSelect}
-        previewBase64={denoiseModalState.previewBase64}
-        originalBase64={denoiseModalState.originalBase64 || null}
-        isProcessing={denoiseModalState.isProcessing}
-        error={denoiseModalState.error}
-        progressMessage={denoiseModalState.progressMessage}
-        aiModelDownloadStatus={aiModelDownloadStatus}
-        isRaw={denoiseModalState.isRaw}
-        targetPaths={denoiseModalState.targetPaths}
-        loadingImageUrl={
-          denoiseModalState.targetPaths.length > 0
-            ? thumbnails[denoiseModalState.targetPaths[0]] ||
-              (selectedImage?.path === denoiseModalState.targetPaths[0] ? finalPreviewUrl : null)
-            : null
-        }
-      />
       <CreateFolderModal
         isOpen={isCreateFolderModalOpen}
         onClose={() => setIsCreateFolderModalOpen(false)}
@@ -5651,13 +4530,6 @@ function App() {
         onError={(err) => {
           setCullingModalState((prev) => ({ ...prev, error: err, progress: null }));
         }}
-      />
-      <CollageModal
-        isOpen={collageModalState.isOpen}
-        onClose={() => setCollageModalState({ isOpen: false, sourceImages: [] })}
-        onSave={handleSaveCollage}
-        sourceImages={collageModalState.sourceImages}
-        thumbnails={thumbnails}
       />
       <ToastContainer
         position="bottom-right"

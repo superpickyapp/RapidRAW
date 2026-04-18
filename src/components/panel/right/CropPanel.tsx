@@ -1,7 +1,6 @@
 import { type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Aperture,
   FlipHorizontal,
   FlipVertical,
   Grid3x3,
@@ -17,7 +16,6 @@ import { Adjustments, INITIAL_ADJUSTMENTS } from '../../../utils/adjustments';
 import clsx from 'clsx';
 import { Orientation, SelectedImage } from '../../ui/AppProperties';
 import TransformModal from '../../modals/TransformModal';
-import LensCorrectionModal from '../../modals/LensCorrectionModal';
 import Text from '../../ui/Text';
 import Slider from '../../ui/Slider';
 import { TEXT_COLOR_KEYS, TextColors, TextVariants, TextWeights } from '../../../types/typography';
@@ -104,8 +102,7 @@ export default function CropPanel({
   const [customW, setCustomW] = useState('');
   const [customH, setCustomH] = useState('');
   const [isTransformModalOpen, setIsTransformModalOpen] = useState(false);
-  const [isLensModalOpen, setIsLensModalOpen] = useState(false);
-  const [isRotationActive, setIsRotationActive] = useState(false);
+const [isRotationActive, setIsRotationActive] = useState(false);
   const [preferPortrait, setPreferPortrait] = useState(false);
   const [isEditingCustom, setIsEditingCustom] = useState(false);
 
@@ -682,14 +679,6 @@ export default function CropPanel({
                   <Scan size={20} className="transition-none" />
                   <span className="text-xs mt-2 transition-none">{t('crop.transform')}</span>
                 </button>
-                <button
-                  className="flex flex-col items-center justify-center p-3 rounded-lg transition-colors bg-surface text-text-secondary hover:bg-card-active hover:text-text-primary group"
-                  onClick={() => setIsLensModalOpen(true)}
-                  data-tooltip={t('crop.lens_desc')}
-                >
-                  <Aperture size={20} className="transition-none" />
-                  <span className="text-xs mt-2 transition-none">{t('crop.lens')}</span>
-                </button>
               </div>
             </div>
           </>
@@ -723,20 +712,6 @@ export default function CropPanel({
           }));
         }}
         currentAdjustments={adjustments}
-      />
-
-      <LensCorrectionModal
-        isOpen={isLensModalOpen}
-        onClose={() => setIsLensModalOpen(false)}
-        onApply={(newParams) => {
-          setAdjustments((prev: Adjustments) => ({
-            ...prev,
-            ...newParams,
-            crop: null,
-          }));
-        }}
-        currentAdjustments={adjustments}
-        selectedImage={selectedImage}
       />
     </div>
   );

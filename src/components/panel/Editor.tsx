@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import { invoke } from '@tauri-apps/api/core';
 import { ImageDimensions, useImageRenderSize } from '../../hooks/useImageRenderSize';
-import { Adjustments, AiPatch, Coord, MaskContainer } from '../../utils/adjustments';
+import { Adjustments, Coord, MaskContainer } from '../../utils/adjustments';
 import { calculateCenteredCrop, getOrientedDimensions } from '../../utils/cropUtils';
 import EditorToolbar from './editor/EditorToolbar';
 import ImageCanvas from './editor/ImageCanvas';
@@ -16,7 +16,6 @@ import Text from '../ui/Text';
 import { TextColors, TextVariants, TextWeights } from '../../types/typography';
 
 interface EditorProps {
-  activeAiPatchContainerId: string | null;
   activeAiSubMaskId: string | null;
   activeMaskContainerId: string | null;
   activeMaskId: string | null;
@@ -35,10 +34,9 @@ interface EditorProps {
   isRotationActive?: boolean;
   onBackToLibrary(): void;
   onContextMenu(event: any): void;
-  onGenerateAiMask(subMaskId: string, startPoint: Coord, endPoint: Coord): void;
-  onQuickErase(subMaskId: string | null, startPoint: Coord, endpoint: Coord): void;
+  onGenerateAiMask?(subMaskId: string, startPoint: Coord, endPoint: Coord): void;
   onRedo(): void;
-  onSelectAiSubMask(id: string | null): void;
+  onSelectAiSubMask?(id: string | null): void;
   onSelectMask(id: string | null): void;
   onStraighten(val: number): void;
   onToggleFullScreen(): void;
@@ -69,7 +67,6 @@ interface EditorProps {
 }
 
 export default function Editor({
-  activeAiPatchContainerId,
   activeAiSubMaskId,
   activeMaskContainerId,
   activeMaskId,
@@ -89,7 +86,6 @@ export default function Editor({
   onBackToLibrary,
   onContextMenu,
   onGenerateAiMask,
-  onQuickErase,
   onRedo,
   onSelectAiSubMask,
   onSelectMask,
@@ -252,7 +248,6 @@ export default function Editor({
 
   const isCropping = activeRightPanel === Panel.Crop;
   const isMasking = activeRightPanel === Panel.Masks;
-  const isAiEditing = activeRightPanel === Panel.Ai;
 
   const hasDisplayableImage = finalPreviewUrl || selectedImage.thumbnailUrl;
   const showSpinner = isLoading && !hasDisplayableImage;
@@ -432,8 +427,6 @@ export default function Editor({
     let activeMaskDef = null;
     if (activeRightPanel === Panel.Masks && activeMaskContainerId) {
       activeMaskDef = adjustments.masks?.find((c: MaskContainer) => c.id === activeMaskContainerId);
-    } else if (activeRightPanel === Panel.Ai && activeAiPatchContainerId) {
-      activeMaskDef = adjustments.aiPatches?.find((p: AiPatch) => p.id === activeAiPatchContainerId);
     }
 
     if (!activeMaskDef) return null;
@@ -487,7 +480,6 @@ export default function Editor({
   }, [
     activeRightPanel,
     activeMaskContainerId,
-    activeAiPatchContainerId,
     adjustments,
     imageRenderSize.width,
     imageRenderSize.height,
@@ -502,15 +494,6 @@ export default function Editor({
         maskDefForOverlay = {
           ...activeMask,
           adjustments: {},
-        };
-      }
-    } else if (activeRightPanel === Panel.Ai && activeAiPatchContainerId) {
-      const activePatch = adjustments.aiPatches?.find((p: AiPatch) => p.id === activeAiPatchContainerId);
-      if (activePatch) {
-        maskDefForOverlay = {
-          ...activePatch,
-          adjustments: {},
-          opacity: 100,
         };
       }
     }
@@ -681,7 +664,7 @@ export default function Editor({
       const wrapper = transformWrapperRef.current;
       if (!wrapper) return;
 
-      if (isCropping || isMasking || isAiEditing || isWbPickerActive) return;
+      if (isCropping || isMasking || isWbPickerActive) return;
 
       if (mouseDownPos.current) {
         const dx = Math.abs(e.clientX - mouseDownPos.current.x);
@@ -747,7 +730,7 @@ export default function Editor({
         }
       }
     },
-    [isCropping, isMasking, isAiEditing, isWbPickerActive, transformWrapperRef, transformConfig.maxScale],
+    [isCropping, isMasking, isWbPickerActive, transformWrapperRef, transformConfig.maxScale],
   );
 
   if (!selectedImage) {
@@ -767,14 +750,8 @@ export default function Editor({
       );
       return container?.subMasks.find((sm) => sm.id === activeMaskId);
     }
-    if (isAiEditing && activeAiSubMaskId) {
-      const container = adjustments.aiPatches.find((c: AiPatch) =>
-        c.subMasks.some((sm: SubMask) => sm.id === activeAiSubMaskId),
-      );
-      return container?.subMasks?.find((sm: SubMask) => sm.id === activeAiSubMaskId);
-    }
     return null;
-  }, [adjustments.masks, adjustments.aiPatches, activeMaskId, activeAiSubMaskId, isMasking, isAiEditing]);
+  }, [adjustments.masks, activeMaskId, isMasking]);
 
   const isPanningDisabled =
     isMaskHovered ||
@@ -785,17 +762,9 @@ export default function Editor({
         activeSubMask?.type === Mask.AiSubject ||
         activeSubMask?.type === Mask.Color ||
         activeSubMask?.type === Mask.Luminance ||
-        activeSubMask?.parameters?.isInitialDraw)) ||
-    (isAiEditing &&
-      (activeSubMask?.type === Mask.Brush ||
-        activeSubMask?.type === Mask.Flow ||
-        activeSubMask?.type === Mask.AiSubject ||
-        activeSubMask?.type === Mask.QuickEraser ||
-        activeSubMask?.type === Mask.Color ||
-        activeSubMask?.type === Mask.Luminance ||
         activeSubMask?.parameters?.isInitialDraw));
 
-  const isZoomActionActive = !isCropping && !isMasking && !isAiEditing && !isWbPickerActive;
+  const isZoomActionActive = !isCropping && !isMasking && !isWbPickerActive;
   const isMaxZoom = transformState.scale >= transformConfig.maxScale - 0.5;
 
   let cursorStyle = 'default';
@@ -891,7 +860,6 @@ export default function Editor({
             }}
           >
             <ImageCanvas
-              activeAiPatchContainerId={activeAiPatchContainerId}
               activeAiSubMaskId={activeAiSubMaskId}
               activeMaskContainerId={activeMaskContainerId}
               activeMaskId={activeMaskId}
@@ -902,7 +870,6 @@ export default function Editor({
               handleCropComplete={handleCropComplete}
               imageRenderSize={imageRenderSize}
               interactivePatch={interactivePatch}
-              isAiEditing={isAiEditing}
               isCropping={isCropping}
               isMaskControlHovered={isMaskControlHovered}
               isMasking={isMasking}
@@ -912,7 +879,6 @@ export default function Editor({
               maskOverlayUrl={maskOverlayUrl}
               onGenerateAiMask={onGenerateAiMask}
               onLiveMaskPreview={handleLiveMaskPreview}
-              onQuickErase={onQuickErase}
               onSelectAiSubMask={onSelectAiSubMask}
               onSelectMask={onSelectMask}
               onStraighten={onStraighten}

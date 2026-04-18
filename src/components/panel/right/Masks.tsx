@@ -1,16 +1,11 @@
 import {
   Brush,
-  BringToFront,
   Circle,
-  Cloud,
   Droplet,
-  Droplets,
-  Eraser,
   Layers,
   RectangleHorizontal,
   Sparkles,
   TriangleRight,
-  User,
   Sun,
 } from 'lucide-react';
 
@@ -28,6 +23,9 @@ export enum Mask {
   QuickEraser = 'quick-eraser',
   Radial = 'radial',
 }
+
+// Note: AI mask types (AiDepth, AiForeground, AiSky, AiSubject, QuickEraser) and Flow
+// are retained in the enum for backward compatibility but are not exposed in the UI.
 
 export enum SubMaskMode {
   Additive = 'additive',
@@ -48,7 +46,7 @@ export interface MaskType {
   id?: string;
   name: string;
   nameKey: string;
-  type: Mask;
+  type: Mask | null;
 }
 
 export interface SubMask {
@@ -63,24 +61,13 @@ export interface SubMask {
 }
 
 export function formatMaskTypeName(type: string) {
-  if (type === Mask.AiDepth) return 'Depth';
-  if (type === Mask.AiSubject) return 'Subject';
-  if (type === Mask.AiForeground) return 'Foreground';
-  if (type === Mask.AiSky) return 'Sky';
   if (type === Mask.All) return 'Whole Image';
-  if (type === Mask.QuickEraser) return 'Quick Eraser';
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
 export function getMaskTypeNameKey(type: string): string {
-  if (type === Mask.AiDepth) return 'masks.type_depth';
-  if (type === Mask.AiSubject) return 'masks.type_subject';
-  if (type === Mask.AiForeground) return 'masks.type_foreground';
-  if (type === Mask.AiSky) return 'masks.type_sky';
   if (type === Mask.All) return 'masks.type_whole_image';
-  if (type === Mask.QuickEraser) return 'masks.type_quick_erase';
   if (type === Mask.Brush) return 'masks.type_brush';
-  if (type === Mask.Flow) return 'masks.type_flow';
   if (type === Mask.Color) return 'masks.type_color';
   if (type === Mask.Linear) return 'masks.type_linear';
   if (type === Mask.Luminance) return 'masks.type_luminance';
@@ -93,42 +80,21 @@ export function getSubMaskName(subMask: Pick<SubMask, 'name' | 'type'>) {
 }
 
 export const MASK_ICON_MAP: Record<Mask, any> = {
-  [Mask.AiDepth]: BringToFront,
-  [Mask.AiForeground]: User,
-  [Mask.AiSky]: Cloud,
+  [Mask.AiDepth]: Sparkles,
+  [Mask.AiForeground]: Sparkles,
+  [Mask.AiSky]: Sparkles,
   [Mask.AiSubject]: Sparkles,
   [Mask.All]: RectangleHorizontal,
   [Mask.Brush]: Brush,
-  [Mask.Flow]: Droplets,
+  [Mask.Flow]: Brush,
   [Mask.Color]: Droplet,
   [Mask.Linear]: TriangleRight,
   [Mask.Luminance]: Sparkles,
-  [Mask.QuickEraser]: Eraser,
+  [Mask.QuickEraser]: Brush,
   [Mask.Radial]: Circle,
 };
 
 export const MASK_PANEL_CREATION_TYPES: Array<MaskType> = [
-  {
-    disabled: false,
-    icon: Sparkles,
-    name: 'Subject',
-    nameKey: 'masks.type_subject',
-    type: Mask.AiSubject,
-  },
-  {
-    disabled: false,
-    icon: Cloud,
-    name: 'Sky',
-    nameKey: 'masks.type_sky',
-    type: Mask.AiSky,
-  },
-  {
-    disabled: false,
-    icon: User,
-    name: 'Foreground',
-    nameKey: 'masks.type_foreground',
-    type: Mask.AiForeground,
-  },
   {
     disabled: false,
     icon: TriangleRight,
@@ -153,73 +119,10 @@ export const MASK_PANEL_CREATION_TYPES: Array<MaskType> = [
   },
 ];
 
-export const AI_PANEL_CREATION_TYPES: Array<MaskType> = [
-  {
-    disabled: false,
-    icon: Eraser,
-    name: 'Quick Erase',
-    nameKey: 'masks.type_quick_erase',
-    type: Mask.QuickEraser,
-  },
-  {
-    disabled: false,
-    icon: Sparkles,
-    name: 'Subject',
-    nameKey: 'masks.type_subject',
-    type: Mask.AiSubject,
-  },
-  {
-    disabled: false,
-    icon: User,
-    name: 'Foreground',
-    nameKey: 'masks.type_foreground',
-    type: Mask.AiForeground,
-  },
-  {
-    disabled: false,
-    icon: Brush,
-    name: 'Brush',
-    nameKey: 'masks.type_brush',
-    type: Mask.Brush,
-  },
-  {
-    disabled: false,
-    icon: TriangleRight,
-    name: 'Linear',
-    nameKey: 'masks.type_linear',
-    type: Mask.Linear,
-  },
-  {
-    disabled: false,
-    icon: Circle,
-    name: 'Radial',
-    nameKey: 'masks.type_radial',
-    type: Mask.Radial,
-  },
-];
+// AI_PANEL_CREATION_TYPES: AI masks removed for SuperPicky-RapidRAW bird photo tool
+export const AI_PANEL_CREATION_TYPES: Array<MaskType> = [];
 
 export const SUB_MASK_COMPONENT_TYPES: Array<MaskType> = [
-  {
-    disabled: false,
-    icon: Sparkles,
-    name: 'Subject',
-    nameKey: 'masks.type_subject',
-    type: Mask.AiSubject,
-  },
-  {
-    disabled: false,
-    icon: Cloud,
-    name: 'Sky',
-    nameKey: 'masks.type_sky',
-    type: Mask.AiSky,
-  },
-  {
-    disabled: false,
-    icon: User,
-    name: 'Foreground',
-    nameKey: 'masks.type_foreground',
-    type: Mask.AiForeground,
-  },
   {
     disabled: false,
     icon: TriangleRight,
@@ -247,13 +150,6 @@ export const SUB_MASK_COMPONENT_TYPES: Array<MaskType> = [
 export const OTHERS_MASK_TYPES: Array<MaskType> = [
   {
     disabled: false,
-    icon: BringToFront,
-    name: 'Depth',
-    nameKey: 'masks.type_depth',
-    type: Mask.AiDepth,
-  },
-  {
-    disabled: false,
     icon: Droplet,
     name: 'Color',
     nameKey: 'masks.type_color',
@@ -275,13 +171,6 @@ export const OTHERS_MASK_TYPES: Array<MaskType> = [
   },
   {
     disabled: false,
-    icon: Droplets,
-    name: 'Flow',
-    nameKey: 'masks.type_flow',
-    type: Mask.Flow,
-  },
-  {
-    disabled: false,
     icon: RectangleHorizontal,
     name: 'Whole Image',
     nameKey: 'masks.type_whole_image',
@@ -289,40 +178,5 @@ export const OTHERS_MASK_TYPES: Array<MaskType> = [
   },
 ];
 
-export const AI_SUB_MASK_COMPONENT_TYPES: Array<MaskType> = [
-  {
-    disabled: false,
-    icon: Sparkles,
-    name: 'Subject',
-    nameKey: 'masks.type_subject',
-    type: Mask.AiSubject,
-  },
-  {
-    disabled: false,
-    icon: User,
-    name: 'Foreground',
-    nameKey: 'masks.type_foreground',
-    type: Mask.AiForeground,
-  },
-  {
-    disabled: false,
-    icon: Brush,
-    name: 'Brush',
-    nameKey: 'masks.type_brush',
-    type: Mask.Brush,
-  },
-  {
-    disabled: false,
-    icon: TriangleRight,
-    name: 'Linear',
-    nameKey: 'masks.type_linear',
-    type: Mask.Linear,
-  },
-  {
-    disabled: false,
-    icon: Circle,
-    name: 'Radial',
-    nameKey: 'masks.type_radial',
-    type: Mask.Radial,
-  },
-];
+// AI_SUB_MASK_COMPONENT_TYPES: emptied for SuperPicky-RapidRAW bird photo tool
+export const AI_SUB_MASK_COMPONENT_TYPES: Array<MaskType> = [];
