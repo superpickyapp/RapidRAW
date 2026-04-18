@@ -1,4 +1,3 @@
-use base64::{Engine as _, engine::general_purpose};
 use image::{DynamicImage, GenericImageView, GrayImage, Luma};
 use imageproc::distance_transform::Norm as DilationNorm;
 use imageproc::morphology::{dilate, erode};

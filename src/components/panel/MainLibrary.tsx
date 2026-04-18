@@ -2316,7 +2316,6 @@ export default function MainLibrary({
           </Text>
           <Text className="mt-2 max-w-sm">
             Could not find an image based on filename or tags.
-            {!appSettings?.enableAiTagging && ' For a more comprehensive search, enable automatic tagging in Settings.'}
           </Text>
         </div>
       ) : (

@@ -35,11 +35,9 @@ use std::time::Duration;
 use base64::{Engine as _, engine::general_purpose};
 use image::codecs::jpeg::JpegEncoder;
 use image::{
-    DynamicImage, GenericImageView, GrayImage, ImageBuffer, ImageFormat, Luma, Rgb, RgbImage, Rgba,
+    DynamicImage, GenericImageView, GrayImage, ImageBuffer, ImageFormat, Luma, RgbImage, Rgba,
     RgbaImage, imageops,
 };
-use image_hdr::hdr_merge_images;
-use image_hdr::input::HDRInput;
 use imageproc::drawing::draw_line_segment_mut;
 use imageproc::edges::canny;
 use imageproc::hough::{LineDetectionOptions, detect_lines};
@@ -56,7 +54,6 @@ use tempfile::NamedTempFile;
 use tokio::task::JoinHandle;
 use wgpu::{Texture, TextureView};
 
-use crate::exif_processing::{read_exposure_time_secs, read_iso};
 use crate::file_management::{
     AppSettings, generate_filename_from_template, load_settings, parse_virtual_path,
     read_file_mapped,
@@ -68,7 +65,7 @@ use crate::image_loader::{
 use crate::image_processing::{
     AllAdjustments, Crop, GeometryParams, GpuContext, ImageMetadata, IntoCowImage, RenderRequest,
     apply_coarse_rotation, apply_cpu_default_raw_processing, apply_crop, apply_flip,
-    apply_geometry_warp, apply_rotation, apply_unwarp_geometry, downscale_f32_image,
+    apply_geometry_warp, apply_rotation, downscale_f32_image,
     get_all_adjustments_from_json, get_or_init_gpu_context, process_and_get_dynamic_image,
     warp_image_geometry,
 };
