@@ -142,7 +142,8 @@
     "hdr_ready": "HDR Ready",
     "error_occurred": "An error occurred.",
     "select_option": "Select an option",
-    "filter_options": "Filter options..."
+    "filter_options": "Filter options...",
+    "reset": "Reset"
   },
   "metadata": {
     "title": "Metadata",
@@ -1196,6 +1197,7 @@
     "copy_section_settings": "Copy {{section}} Settings",
     "paste_section_settings": "Paste {{section}} Settings",
     "paste_settings": "Paste Settings",
-    "reset_section_settings": "Reset {{section}} Settings"
+    "reset_section_settings": "Reset {{section}} Settings",
+    "depth_range": "Depth Range"
   }
 }

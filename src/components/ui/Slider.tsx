@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GLOBAL_KEYS } from './AppProperties';
 
 interface SliderProps {
@@ -31,6 +32,7 @@ const Slider = ({
   fillOrigin = 'default',
   suffix = '',
 }: SliderProps) => {
+  const { t } = useTranslation();
   const [displayValue, setDisplayValue] = useState<number>(value);
   const [isDragging, setIsDragging] = useState(false);
   const animationFrameRef = useRef<any>(undefined);
@@ -350,7 +352,7 @@ const Slider = ({
                 isLabelHovered ? 'opacity-100' : 'opacity-0'
               }`}
             >
-              Reset
+              {t('app.reset')}
             </span>
           )}
         </div>

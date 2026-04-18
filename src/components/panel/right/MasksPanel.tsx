@@ -397,7 +397,7 @@ function DepthRangePicker({
             isLabelHovered ? 'opacity-0' : 'opacity-100'
           }`}
         >
-          Depth Range
+          {depthT('masks.depth_range')}
         </Text>
         <Text
           variant={TextVariants.label}
@@ -406,7 +406,7 @@ function DepthRangePicker({
             isLabelHovered ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          Reset
+          {depthT('app.reset')}
         </Text>
       </div>
       <div
